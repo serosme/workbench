@@ -40,7 +40,7 @@ function openContextMenu(event: MouseEvent) {
             <!-- ring-inset：UScrollArea 的 overflow 会裁掉画在卡片盒外的 ring，首行/末行/最左列/最右列的边框会凭空消失 -->
             <UCard
               :data-note-id="item.id"
-              :ui="{ root: 'ring-inset' }"
+              :ui="{ root: 'ring-inset cursor-pointer' }"
               @click="noteForm.openEdit(item)"
             >
               <!-- text-sm 行高 20px，max-h-40 = 160px 正好 8 行，在整行处裁断；不用 line-clamp 的省略号，也不加渐隐 -->
