@@ -32,7 +32,6 @@
 │  ├─ app.vue                      # F3：Nuxt 根组件，UApp 包裹 NuxtPage
 │  ├─ assets/css/main.css          # F12：Tailwind CSS v4 + Nuxt UI 全局样式
 │  ├─ components/
-│  │  ├─ FileDeleteModal.vue          # F11：文件/文件夹删除确认弹窗（submitting 防重复提交）
 │  │  ├─ FileTree.vue                 # F11：Blob 文件树节点展示，文件夹和文件行使用右键菜单，点击样式与书签树一致
 │  │  ├─ FileUploadModal.vue         # F11：上传弹窗（选择文件 + 路径前缀 + 分片上传进度条）
 │  │  ├─ BookmarkFormModal.vue     # F4：书签新增/编辑弹窗（create/edit 双模式，submitting 防重复提交）
@@ -45,8 +44,7 @@
 │  │  ├─ useFiles.ts                 # F11：获取 Blob 文件树与分片上传（带进度回调）
 │  │  ├─ useFileMenu.ts              # F11：文件/文件夹右键菜单（下载、删除，文件夹上传）
 │  │  ├─ useFileUploadForm.ts        # F11：上传弹窗状态（open + defaultPath）
-│  │  ├─ useFileDeleteForm.ts        # F11：删除确认弹窗状态（open + node）
-│  │  ├─ useDeleteFile.ts            # F11：文件/文件夹删除（DELETE + toast，刷新由页面负责）
+│  │  ├─ useDeleteFile.ts            # F11：文件/文件夹删除（DELETE + 调用传入的 refresh + toast）
 │  │  ├─ useBookmarks.ts           # F2：数据获取与 leftTree / rightTree 构建，并暴露 data 供注入
 │  │  ├─ useBookmarkForm.ts        # F4：书签弹窗状态管理（openCreate/openEdit）
 │  │  ├─ useFolderForm.ts          # F4：文件夹弹窗状态管理（openCreate/openEdit）
@@ -208,8 +206,7 @@
 - **不要用服务端 prefix 前缀列举**：`server/utils/blob-files.ts` 的 `listBlobs(prefix)` 是「拉全量 + 内存按前缀过滤」。`@nuxthub/blob` 的 fs driver 把 `list` 的 prefix 当目录名处理（`join(dir, prefix)`），传文件 key 会以「读目录」失败返回空列表，传 `docs/` 这类带斜杠的目录也不一定命中，结果是删除「接口成功但什么都没发生」。前缀过滤统一走 `listBlobs(prefix)`（内部就是「拉全量 + 内存过滤」两步，不再单独暴露 `listAllBlobs` / `filterByPrefix`），前缀尾部斜杠会被剥掉再比较，并只匹配 `${base}/` 下的对象，避免误匹配同名文件 `docs` 或 `docs-other.txt`；`tree.get.ts` 直接用 `listBlobs('')`，`delete.delete.ts` 用 `listBlobs(path)` 取整棵子树；R2 driver 的 `list({ prefix })` 本身是正常的，但为了两端一致也走同一个函数
 - 下载走 `server/api/files/download.get.ts`：`blob.head` 取大小（文件不存在时它自己抛 404）→ 超过 `MAX_SIZE`（64MB）返回 413 → `blob.serve(event, path)` 流式返回（内部读成 ArrayBuffer 后包成 ReadableStream，返回给 h3 时 `isStream` 认 `pipeTo`）。**`Content-Disposition` 的头值只能是 latin1**，中文名直接写进 `filename=` 会让 Node / Workers 的头校验抛 `ERR_INVALID_CHAR`、整个下载 500，所以 ASCII 名回退一份、真正的名字走 RFC 5987 的 `filename*=UTF-8''`
 - **下载的 64MB 上限**：`blob.get` / `blob.serve` / driver 的 `get` 都是整份读取，下载请求内存随文件大小增长。将最大下载大小限制为 64MB，为 Workers 运行时预留内存空间；`Content-Disposition` 文件名使用 RFC 5987 编码以支持中文名。
-- 删除走 `server/api/files/delete.delete.ts`：key 以 `/` 结尾（文件夹）时用 `listBlobs(path)` 收集整棵子树再一次性 `blob.del(keys)`，否则直接 `blob.del(path)`；两个 driver 的 delete 都会忽略不存在的 key，所以不做存在性校验（删不存在的路径是幂等的，个人单用户也不需要「别人先删了」这种防御）。handler 不写 return：Nitro 用 `preemptive` router，`undefined` 会被转成 `null` → 204。`useDeleteFile.remove(path)` 只负责发请求和 toast，**不在内部调 `refresh`**——刷新由页面在 `@deleted` 时做一次（`refresh` 由 `useFetch` 同一 key 去重，重复调用会取消其中一个请求并抛出 `AbortError: AsyncData request cancelled by deduplication` 被全局 toast 弹出来）
-- 删除确认弹窗（`FileDeleteModal.vue`）按 `node.type` 显示「删除文件夹 / 删除文件」，文件夹额外提示会连带删除内部文件，提交带 `submitting` 守卫；菜单状态由 `useFileDeleteForm`（`open + node`）持有，与上传弹窗的 `useFileUploadForm` 同构
+- 删除走 `server/api/files/delete.delete.ts`：key 以 `/` 结尾（文件夹）时用 `listBlobs(path)` 收集整棵子树再一次性 `blob.del(keys)`，否则直接 `blob.del(path)`；两个 driver 的 delete 都会忽略不存在的 key，所以不做存在性校验（删不存在的路径是幂等的，个人单用户也不需要「别人先删了」这种防御）。handler 不写 return：Nitro 用 `preemptive` router，`undefined` 会被转成 `null` → 204。`useDeleteFile(refresh).remove(path)` 在 DELETE 成功后立即调 `refresh()` 再 toast，与 `useDeleteBookmark` / `useDeleteNote` 同构
 - 上传弹窗（`FileUploadModal.vue`）收文件 + 路径前缀 + 上传进度条。最终 key 是 `prefix/文件名`；路径为空就是根目录；在文件夹里上传时路径默认是该文件夹的 `key`，用户可以继续往后追加一层（如 `documents/photos`），**新增的层不需要预先存在**，上传后自然会出现在树里——这就是替代「新建文件夹」的做法。上传期间路径输入与文件选择都 disabled，避免中途改 key
 - 前端 `useFiles` 的 `upload(key, file, onProgress)` 把 key 的目录部分交给 `useMultipartUpload` 的 `prefix`（`key.slice(0, -文件名)`），文件本体直接用 `File`——create 内部就是按 `file.name` 拼 pathname，不需要再包一层 `new File`；进度的 `watch(progress)` 建在事件处理器的调用栈里（不在 setup 作用域），不会随组件销毁自动停止，所以 `upload()` 里用 `try/finally` 手动 `stop()`；库上报的是「已完成片数 / 总片数」且先赋值再 `push`（滞后一片），要按 `chunks` 换算成正在传的那一片，否则小于一片的文件全程 0%、多片文件最多停在 `(n-1)/n`；上传弹窗通过 `upload` prop 注入，**不要在弹窗里再调一次 `useFiles()`**——那会在同一 key 上重复发起 `useSelfFetch('/api/files/tree')`，Nuxt 去重取消其中一个请求并抛 `AbortError: AsyncData request cancelled by deduplication` 并被全局 toast 弹出来
 - 右键菜单靠 token class 定位节点：`UTree` 只把 `item.class` 透传到带 `data-slot="link"` 的元素上、不转发任意属性，所以 `FileTree.vue` 的 `buildTreeItems` 组树时给每个节点挂 `file-node-<n>` 类并同时建 `token → node` 的 Map，`@contextmenu` 里 `closest('[data-slot="link"]')` 取类名再查 Map（拿不到类名就当成空白处，弹根级菜单）；升级 Nuxt UI 时要重新核对 `item.class` 是否仍落在 link 元素上
@@ -218,13 +215,13 @@
 
 ## 前端架构约定
 
-- **删除刷新时序**：`useDeleteBookmark` / `useDeleteFolder` 在 DELETE 成功后立即调用传入的 `refresh()`（不 await），随后提示成功；文件删除 composable 不刷新，由页面在删除事件后刷新。
+- **删除刷新时序**：`useDeleteBookmark` / `useDeleteFolder` / `useDeleteNote` / `useDeleteFile` 都在 DELETE 成功后立即调用传入的 `refresh()`（不 await），随后提示成功；即「删除类 composable 统一收一个 `refresh` 回调」。
 - **文案语言与页面导航**：所有页面的菜单、弹窗、提示等界面文案统一使用英文（Toast 也是英文，`selfFetch` 的错误提示见 F8）；代码注释仍用中文。三个页面右下角统一渲染 `PageNav`（`fixed bottom-4 right-4` 的竖排仅图标按钮，按 `useRoute().path` 过滤掉当前页、只留另外两页互跳），页面自己不再写导航按钮
-- **弹窗操作按钮**：所有弹窗的操作按钮统一放在 `UModal` 的 `#footer`、右对齐，外层固定用 `<div class="flex justify-end gap-2 w-full">`（删除确认弹窗的 Cancel/Delete 也在这个结构里）。表单弹窗的按钮不在 `<UForm>` 内，所以不用 `type="submit"`，而是给 `UForm` 挂 `ref="formRef"`（`const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')`），footer 的按钮用 `@click="formRef?.submit()"`——`UForm.submit()` 会先跑校验再触发 `@submit`，校验链路（如书签/文件夹的 `:validate`）不受影响。登录页的 `UAuthForm` 提交按钮是整行宽（`block`），不在此列
+- **弹窗操作按钮**：所有弹窗的操作按钮统一放在 `UModal` 的 `#footer`、右对齐，外层固定用 `<div class="flex justify-end gap-2 w-full">`。表单弹窗的按钮不在 `<UForm>` 内，所以不用 `type="submit"`，而是给 `UForm` 挂 `ref="formRef"`（`const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')`），footer 的按钮用 `@click="formRef?.submit()"`——`UForm.submit()` 会先跑校验再触发 `@submit`，校验链路（如书签/文件夹的 `:validate`）不受影响。登录页的 `UAuthForm` 提交按钮是整行宽（`block`），不在此列
 - **笔记页瀑布流**：用 `UScrollArea` 的 `virtualize` + `lanes`（`{ lanes, gap: 16, estimateSize: 180 }`），这是 Nuxt UI 官方的 masonry 用法——`virtualize` 打开分道虚拟滚动，`lanes` 给列数，`estimateSize` 只是首屏估算、真实高度由库对每项做 `measureElement`。`lanes` 是 `ref`，由 `window.innerWidth` 的 resize 监听算成 1/2/3（笔记页内容左右对称留白 `px-[25vw]` 居中、剩 50vw；书签/文件页的 `pl-[30vw] pr-[20vw]` 偏右是给树留的，笔记页不需要）；**不要退回 CSS multi-column**（`columns-*` + `break-inside-avoid`）：那是本项目引入 Nuxt UI 瀑布流之前的写法，列平衡与卡片定位都更笨拙
 - **笔记卡片的右键定位**：卡片是页面自己渲染的 DOM，直接挂 `data-note-id`，`@contextmenu` 里用 `closest('[data-note-id]')` 反查记录；**不要照搬书签/文件树的 token class + Map 方案**——那是 `UTree` 只透传 `item.class`、不转发任意属性导致的变通。`closest` 取不到就是空白处 → 根级菜单（新建笔记）。右键处理器里**不能 `event.stopPropagation()`**：Reka 的 ContextMenuTrigger 要靠事件冒泡到触发元素才会在指针位置打开菜单
 - **笔记卡片的预览**：卡片正文 `max-h-40 overflow-hidden`（`text-sm` 行高 20px，160px 正好 8 行）在**整行处裁断**，既不加 `line-clamp` 的省略号（代码类文本结束后挂个 `...` 很难看），也不加渐隐；完整内容靠左键 `@click` 直接打开**编辑**弹窗（`noteForm.openEdit`），与右键菜单的「Edit」是同一个入口，**没有单独的只读详情弹窗**；卡片是 `cursor-pointer`，悬停时显示手型光标。新建/编辑弹窗的 `UTextarea` 固定 `:rows="20"`（配 `:ui="{ base: 'resize-none' }"`、不加 `autoresize`），内容超出后文本框自己出滚动条。卡片高度必须有上界，虚拟瀑布的 `estimateSize` 与 `measureElement` 都指望它
-- **笔记删除不弹确认框**：与书签一致（只有文件删除有 `FileDeleteModal`）；`useDeleteNote(refresh)` 在 DELETE 成功后立即调 `refresh()` 再 toast，与 `useDeleteBookmark` 同构
+- **删除一律不弹确认框**：书签 / 文件夹 / 笔记 / 文件（含文件页的文件夹，会整棵删除）都是菜单项一点即删，没有确认弹窗、也没有撤销——个人自用项目刻意保持简单；`useDeleteNote(refresh)` 在 DELETE 成功后立即调 `refresh()` 再 toast，与 `useDeleteBookmark` / `useDeleteFile` 同构
 - **笔记顺序只由服务端给**：`createdAt` 由服务端写 `Date.now()`、编辑不改，顺序完全取自 `GET /api/notes` 的 `ORDER BY createdAt DESC, id DESC`，页面不做客户端排序（书签那套 `sortBookmarks` 是 position 模型专用的）
 - **浅层封装**：书签/文件夹的**新增、编辑、删除**逻辑全部分离（useBookmarkForm / useFolderForm / useDeleteBookmark / useDeleteFolder），移动弹窗状态独立成 `useMoveForm`，即使代码相似也不合并
 - **单一职能**：数据（`useBookmarks`）、弹窗状态（`*Form`）、删除（`useDelete*`）、排序（`useReorderBookmarks`）、菜单（`*Menu`）各自独立，互不混合

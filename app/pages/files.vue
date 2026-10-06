@@ -1,9 +1,8 @@
 <script setup lang="ts">
 const { tree, upload, refresh } = useFiles()
 const uploadForm = useFileUploadForm()
-const deleteForm = useFileDeleteForm()
-const { remove } = useDeleteFile()
-const { getMenu } = useFileMenu(uploadForm, deleteForm)
+const { remove } = useDeleteFile(refresh)
+const { getMenu } = useFileMenu(uploadForm, remove)
 </script>
 
 <template>
@@ -19,12 +18,6 @@ const { getMenu } = useFileMenu(uploadForm, deleteForm)
       :default-path="uploadForm.modal.defaultPath"
       :upload="upload"
       @saved="refresh"
-    />
-    <FileDeleteModal
-      v-model:open="deleteForm.modal.open"
-      :node="deleteForm.modal.node"
-      :remove="remove"
-      @deleted="refresh"
     />
   </div>
 </template>

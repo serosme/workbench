@@ -3,7 +3,7 @@ import type { FileTreeNode } from '#shared/types/files'
 
 export function useFileMenu(
   uploadForm: ReturnType<typeof useFileUploadForm>,
-  deleteForm: ReturnType<typeof useFileDeleteForm>,
+  remove: (path: string) => Promise<void>,
 ) {
   function download(node: FileTreeNode) {
     const link = document.createElement('a')
@@ -26,7 +26,7 @@ export function useFileMenu(
           {
             label: 'Delete Folder',
             icon: 'i-lucide-trash',
-            onSelect() { deleteForm.open(node) },
+            onSelect() { remove(node.key) },
           },
         ],
       ]
@@ -45,7 +45,7 @@ export function useFileMenu(
           {
             label: 'Delete File',
             icon: 'i-lucide-trash',
-            onSelect() { deleteForm.open(node) },
+            onSelect() { remove(node.key) },
           },
         ],
       ]
