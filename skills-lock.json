@@ -5,19 +5,19 @@
       "source": "cloudflare/skills",
       "sourceType": "github",
       "skillPath": "skills/cloudflare/SKILL.md",
-      "computedHash": "61b6c4b68c6b155302edeb63779d39600d88a0029ef2bb0667aedc07c9732ba4"
+      "computedHash": "3a7feee130cfd2e29672c762a0f4402ef23bcc52ef70fd2121f6ebe8c8557f12"
     },
     "nuxt-ui": {
       "source": "nuxt/ui",
       "sourceType": "github",
       "skillPath": "skills/nuxt-ui/SKILL.md",
-      "computedHash": "81bcd25ad7af49690e5e48df6534abe1d91ebe7cda441c08628da9c7f42c62a6"
+      "computedHash": "8340a217c89f24d62fc6de5e0a223edc561987d01ecafb0dbd9d9c65b97e5795"
     },
     "wrangler": {
       "source": "cloudflare/skills",
       "sourceType": "github",
       "skillPath": "skills/wrangler/SKILL.md",
-      "computedHash": "d6772400129d81396d655e1b5ab90067994a6a2033c62d96c911c12963eac0e5"
+      "computedHash": "b1cba2fab47b01915066505abdd249b60b3c7e311126224d92fed1f6ecbaa456"
     }
   }
 }
