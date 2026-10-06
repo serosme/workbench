@@ -15,8 +15,8 @@
 - **F3 双栏视图与节点菜单**：书签页左栏显示所有文件夹及其子书签，右栏显示根级书签；树节点通过右键打开节点操作菜单，节点链接隐藏默认尾随箭头；左右面板及右键区域铺满视口高度，面板空白处右键显示新建菜单（左侧新建文件夹/书签，右侧新建书签），无底部新建虚拟项。
 - **F4 新建与编辑**：书签、文件夹各一个 create/edit 双模式弹窗；新建位置由 `nextPosition(parentId, type)` 给出，提交带 `submitting` 守卫防重复提交。
 - **F5 删除**：书签/文件夹删除；非空文件夹拒绝删除；删除后把同组剩余项整段重编号。
-- **F6 同级上移下移**：右键节点菜单里的 Move Up / Move Down；处于 `(parentId, type)` 分组首尾时对应项 disabled，请求在途时所有节点的移动项 disabled。
-- **F7 排序位置模型**：`position` 的分组不变式、`nextPosition` 语义，以及统一的单条语句重编号 `renumberGroupQuery`。
+- **F6 同级与跨级移动**：这五项收在节点菜单的 **Move 二级菜单**里，子项文案是相对 Move 的简写（一级已经叫 Move，子项再写一遍会重复）——Up / Down（同级一步）、To Top / To Bottom（同级首尾，整组一次重编号，不必连点 N 次）、To Folder（跨父级：打开移动弹窗选择目标父级，落到目标分组末尾）；同级处于 `(parentId, type)` 分组首尾时对应子项 disabled，请求在途时整个 Move 菜单 disabled。
+- **F7 排序位置模型**：`position` 的分组不变式、`nextPosition` 语义、统一的单条语句重编号 `renumberGroupQuery`，以及跨父级移动时源分组与目标分组各自重编号。
 - **F8 请求与错误处理**：`selfFetch` 在请求错误时弹出英文 toast，401 时跳转登录；`useSelfFetch` 是其 `useFetch` 封装。
 - **F9 数据库与迁移**：Drizzle schema、开发用本地 SQLite、生产用 Cloudflare D1、迁移文件。
 - **F10 部署与备份**：`pnpm deploy` 构建 Workers 产物并应用 D1 迁移；`pnpm backup` 导出远程 D1 到 `db.sql`。
@@ -36,6 +36,7 @@
 │  │  ├─ FileUploadModal.vue         # F11：上传弹窗（选择文件 + 路径前缀 + 分片上传进度条）
 │  │  ├─ BookmarkFormModal.vue     # F4：书签新增/编辑弹窗（create/edit 双模式，submitting 防重复提交）
 │  │  ├─ FolderFormModal.vue       # F4：文件夹新增/编辑弹窗（create/edit 双模式，submitting 防重复提交）
+│  │  ├─ MoveFormModal.vue         # F6：移动弹窗（UTree 选目标父级：根级 + 文件夹树，默认全展开并选中当前父级；自己发请求 + emit moved）
 │  │  └─ LoginForm.vue             # F1：登录表单（UAuthForm，密码登录）
 │  ├─ composables/
 │  │  ├─ useFiles.ts                 # F11：获取 Blob 文件树与分片上传（带进度回调）
@@ -46,18 +47,20 @@
 │  │  ├─ useBookmarks.ts           # F2：数据获取与 leftTree / rightTree 构建，并暴露 data 供注入
 │  │  ├─ useBookmarkForm.ts        # F4：书签弹窗状态管理（openCreate/openEdit）
 │  │  ├─ useFolderForm.ts          # F4：文件夹弹窗状态管理（openCreate/openEdit）
+│  │  ├─ useMoveForm.ts            # F6：移动弹窗状态（open + item）
 │  │  ├─ useDeleteBookmark.ts      # F5：书签删除（DELETE + 调用传入的 refresh + toast）
 │  │  ├─ useDeleteFolder.ts        # F5：文件夹删除（DELETE + 调用传入的 refresh + toast）
-│  │  ├─ useReorderBookmarks.ts    # F6/F7：move / canMove / nextPosition；在途时 canMove 恒 false
-│  │  ├─ useBookmarkMenu.ts        # F3/F6：书签节点右键菜单（打开/上移下移/编辑/删除）
-│  │  └─ useFolderMenu.ts          # F3/F4/F6：文件夹节点右键菜单（新建×2/上移下移/编辑/删除）
+│  │  ├─ useReorderBookmarks.ts    # F6/F7：move / canMove（up|down|top|bottom 共用一套）/ nextPosition，只管组内重编号
+│  │  ├─ useBookmarkMenu.ts        # F3/F6：书签节点右键菜单（打开新标签/Move 子菜单/编辑/删除）
+│  │  └─ useFolderMenu.ts          # F3/F4/F6：文件夹节点右键菜单（新建×2/Move 子菜单/编辑/删除）
 │  ├─ pages/
 │  │  ├─ index.vue                 # F3：重定向到 /bookmarks
 │  │  ├─ bookmarks.vue             # F3：主页面，书签双树视图；节点及左右铺满视口高度的空白区域右键打开菜单，隐藏树节点默认尾随箭头，右下角链接到 /files
 │  │  ├─ files.vue                 # F11：文件树与右侧预留空白预览区，右下角链接回 /bookmarks
 │  │  └─ login.vue                 # F1：登录页（redirect 查询参数回跳）
 │  └─ utils/
-│     ├─ bookmark-tree.ts          # F2/F7：sortBookmarks 排序与 buildTree 组树
+│     ├─ bookmark-menu.ts          # F3/F6：节点菜单共用部分（moveMenuItem 的 Move 二级菜单、menuBookmark 取原始记录）
+│     ├─ bookmark-tree.ts          # F2/F7：sortBookmarks 排序、buildTree 组树、buildFolderTree 移动目标文件夹树
 │     ├─ selfFetch.ts              # F8：$fetch 实例（全局错误 toast + 401 跳转登录）
 │     └─ useSelfFetch.ts           # F8：useFetch 封装（基于 selfFetch）
 ├─ server/                         # F1/F2/F4–F7/F9/F11：Nitro 服务端
@@ -68,6 +71,7 @@
 │  ├─ api/bookmarks/[id].put.ts    # F4：PUT /api/bookmarks/:id，更新书签/文件夹
 │  ├─ api/bookmarks/[id].delete.ts # F5/F7：DELETE /api/bookmarks/:id，删除 + 同组剩余项重编号
 │  ├─ api/bookmarks/reorder.put.ts # F6/F7：PUT /api/bookmarks/reorder，同级整段重编号
+│  ├─ api/bookmarks/move.put.ts    # F6/F7：PUT /api/bookmarks/move，跨父级移动 + 源/目标分组各自重编号
 │  ├─ api/files/tree.get.ts        # F11：GET /api/files/tree，读取 Blob 全部对象并构建文件树
 │  ├─ api/files/multipart/         # F11：分片上传路由 [action]/[...pathname]，交给 blob.handleMultipartUpload
 │  ├─ api/files/download.get.ts    # F11：GET /api/files/download?path=，下载 Blob 文件
@@ -121,20 +125,21 @@
 
 ## API 端点
 
-| 方法   | 路径                                          | 说明                                                                                                                                                    |
-| ------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| POST   | `/api/auth/login`                             | 密码登录（body: password），成功设置 token cookie（httpOnly）                                                                                           |
-| GET    | `/api/bookmarks`                              | 获取所有书签（按 position 排序）                                                                                                                        |
-| POST   | `/api/bookmarks`                              | 创建书签/文件夹（body: name, type, position，数据库非空约束）                                                                                           |
-| PUT    | `/api/bookmarks/reorder`                      | 同级重排（body: parentId, type, ids），按 ids 顺序把该分组的 position 重写为 1..n；不校验 ids 覆盖度，由调用方保证传完整分组                            |
-| PUT    | `/api/bookmarks/:id`                          | 更新书签/文件夹（parentId 不能等于自身 id；不存在时更新 0 行）                                                                                          |
-| DELETE | `/api/bookmarks/:id`                          | 删除；非空文件夹返回 400 'Folder is not empty'；删除与同组剩余项重编号在同一 `db.batch()` 中原子完成（重编号是单条语句，见 `server/utils/renumber.ts`） |
-| GET    | `/api/files/tree`                             | 读取 NuxtHub Blob Storage 的全部对象，按 `/` 分隔构建完整文件夹/文件树                                                                                  |
-| POST   | `/api/files/multipart/[action]/[...pathname]` | 分片上传：action 为 create / upload / complete / abort，由客户端 `useMultipartUpload` 调用；分片按片缓冲，不受 128MB 内存与单请求 100MB 限制            |
-| GET    | `/api/files/download?path=`                   | 下载指定 Blob 文件，响应以附件形式返回                                                                                                                  |
-| DELETE | `/api/files/delete?path=`                     | 删除 Blob：`path` 以 `/` 结尾（文件夹）时用 `listBlobs` 取出整棵子树再一次性 `blob.del`，否则删除单个文件                                               |
+| 方法   | 路径                                          | 说明                                                                                                                                                                                                                                                                                                    |
+| ------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/auth/login`                             | 密码登录（body: password），成功设置 token cookie（httpOnly）                                                                                                                                                                                                                                           |
+| GET    | `/api/bookmarks`                              | 获取所有书签（按 position 排序）                                                                                                                                                                                                                                                                        |
+| POST   | `/api/bookmarks`                              | 创建书签/文件夹（body: name, type, position，数据库非空约束）                                                                                                                                                                                                                                           |
+| PUT    | `/api/bookmarks/reorder`                      | 同级重排（body: parentId, type, ids），按 ids 顺序把该分组的 position 重写为 1..n；不校验 ids 覆盖度，由调用方保证传完整分组                                                                                                                                                                            |
+| PUT    | `/api/bookmarks/move`                         | 跨父级移动（body: id, parentId）：挂到目标父级并落到该 `(parentId, type)` 分组末尾；源分组与目标分组各整段重编号、更新 parentId 三步在同一个 `db.batch()` 里（目标分组最后写，故同父级移动也正确）。400：parentId 等于自身、id 不存在、把文件夹移进自己的子孙（成环会让子树从界面消失且无法用界面恢复） |
+| PUT    | `/api/bookmarks/:id`                          | 更新书签/文件夹（parentId 不能等于自身 id；不存在时更新 0 行）                                                                                                                                                                                                                                          |
+| DELETE | `/api/bookmarks/:id`                          | 删除；非空文件夹返回 400 'Folder is not empty'；删除与同组剩余项重编号在同一 `db.batch()` 中原子完成（重编号是单条语句，见 `server/utils/renumber.ts`）                                                                                                                                                 |
+| GET    | `/api/files/tree`                             | 读取 NuxtHub Blob Storage 的全部对象，按 `/` 分隔构建完整文件夹/文件树                                                                                                                                                                                                                                  |
+| POST   | `/api/files/multipart/[action]/[...pathname]` | 分片上传：action 为 create / upload / complete / abort，由客户端 `useMultipartUpload` 调用；分片按片缓冲，不受 128MB 内存与单请求 100MB 限制                                                                                                                                                            |
+| GET    | `/api/files/download?path=`                   | 下载指定 Blob 文件，响应以附件形式返回                                                                                                                                                                                                                                                                  |
+| DELETE | `/api/files/delete?path=`                     | 删除 Blob：`path` 以 `/` 结尾（文件夹）时用 `listBlobs` 取出整棵子树再一次性 `blob.del`，否则删除单个文件                                                                                                                                                                                               |
 
-除 `/api/auth/login` 外所有 API 均需登录（`server/middleware/auth.ts` 校验 token）。`reorder` 是静态路由，优先于 `[id]` 动态路由匹配。
+除 `/api/auth/login` 外所有 API 均需登录（`server/middleware/auth.ts` 校验 token）。`reorder` / `move` 是静态路由，优先于 `[id]` 动态路由匹配。
 
 ## 数据库
 
@@ -189,12 +194,16 @@
 
 - **删除刷新时序**：`useDeleteBookmark` / `useDeleteFolder` 在 DELETE 成功后立即调用传入的 `refresh()`（不 await），随后提示成功；文件删除 composable 不刷新，由页面在删除事件后刷新。
 - **文案语言与页面导航**：书签页菜单、弹窗和提示使用英文；文件树页菜单、弹窗等界面文案使用中文，但所有 Toast 提示统一使用英文；`/files` 没有全局导航，两页右下角各有一个 `fixed bottom-4 right-4` 的仅图标 `UButton to=...` 链接互相跳转（书签页文件树图标 → `/files`，文件页书签图标 → `/bookmarks`）
-- **浅层封装**：书签/文件夹的**新增、编辑、删除**逻辑全部分离（useBookmarkForm / useFolderForm / useDeleteBookmark / useDeleteFolder），即使代码相似也不合并
+- **浅层封装**：书签/文件夹的**新增、编辑、删除**逻辑全部分离（useBookmarkForm / useFolderForm / useDeleteBookmark / useDeleteFolder），移动弹窗状态独立成 `useMoveForm`，即使代码相似也不合并
 - **单一职能**：数据（`useBookmarks`）、弹窗状态（`*Form`）、删除（`useDelete*`）、排序（`useReorderBookmarks`）、菜单（`*Menu`）各自独立，互不混合
-- **依赖注入**：页面（bookmarks.vue）实例化 composable 后以参数注入菜单 composable（如 `useFolderMenu(bookmarkForm, folderForm, removeFolder, move, canMove)`），菜单内部不自行实例化状态类 composable
+- **依赖注入**：页面（bookmarks.vue）实例化 composable 后以参数注入菜单 composable（如 `useFolderMenu(bookmarkForm, folderForm, removeFolder, reorder)`，`reorder` 就是 `useReorderBookmarks` 的返回值），菜单内部不自行实例化状态类 composable
 - **排序模型**：分组键为 `(parentId, type)`，同组内 `sortBookmarks` 恒定「文件夹优先」→「position 升序」，因此 UI 中一段连续可视区间恰好等于一个分组。客户端排序是唯一权威（`leftTree` / `rightTree` 都经 `sortBookmarks`），不依赖 `GET /api/bookmarks` 的返回顺序。移动**只做整段重编号**（按新顺序把 position 写回 `1..n`），**永不交换 position 值**——历史数据的 position 是全局计数器留下的，可能带偏移和间隙，交换语义未定义且无法自愈。新建位置由 `useReorderBookmarks` 的 `nextPosition(parentId, type)` 统一计算，它返回**可直接写入数据库的 position**（组内 `max(position) + 1`，空分组为 1），调用方（弹窗的 `nextPosition` prop）**不得再 `+1`**——位置计算只发生一次；编辑保留原 position。历史数据无需预先迁移，删除或移动时会将目标分组整段归一化为 `1..n`
 - **重编号实现**：必须走 `server/utils/renumber.ts` 的 `renumberGroupQuery(parentId, type, orderedIds)`，它用 SQLite JSON1 的 `json_each` 把顺序当参数传入，**语句数恒为 1、绑定参数为常数个且最多 4 个，与分组大小 N 无关**。不要改回「每行一条 UPDATE」（随 N 线性增长，会撞 D1 每批语句数限制），也不要改成「单条 CASE」（要 2N 个绑定参数，会撞 D1 每查询 100 个绑定参数的限制）。**调用方必须传入该分组的完整成员**——服务端不做覆盖度校验，漏传的行不会被更新
 - **移动能力查询成本**：`useReorderBookmarks` 的 `located` computed 预先构造 `id → { item, group, index }` 映射，`locate` 只做 Map 查找。不要在 `canMove` / `locate` 内重排或扫描全量数据；以往扫描造成的约 16ms/次开销是优化此处的原因。
+- **移动的两条通道**：同父级内走 `PUT /api/bookmarks/reorder`（`useReorderBookmarks` 负责）；跨父级走 `PUT /api/bookmarks/move`，由 `MoveFormModal` 自己发请求（与 `BookmarkFormModal` / `FolderFormModal` 一致：弹窗发请求 + `emit`，页面在 `@moved` 上 `refresh`），所以 `useReorderBookmarks` 里没有跨父级的函数。
+- **四个同级移动共用一套逻辑**：`move(id, direction)` / `canMove(id, direction)` 的 direction 是 `up | down | top | bottom`——「走一格」和「到首/尾」只是**目标下标**不同（`{ up: index - 1, down: index + 1, top: 0, bottom: group.length - 1 }`），所以没有单独的 `moveToEdge` / `canMoveToEdge`，也**不要用循环调 `move` 来实现移到首/尾**（一次整组重编号即可）。`move` 开头会先 `canMove` 一次：已在两端时 `up` 会算出 `target = -1`，而 `splice(-1, 0, id)` 会把它插到倒数第二位、静默写坏顺序。
+- **节点菜单的 Move 是共用的二级菜单**：`app/utils/bookmark-menu.ts` 的 `moveMenuItem(bookmark, reorder, moveForm)` 返回一个带 `children` 的子菜单项，同时给书签菜单和文件夹菜单用（各写一份会随项数增加越来越难同步）；`menuBookmark(item)` 是共用的取值器（树节点把原始记录挂在 `_bookmark` 上）。一级菜单因此只有 4~5 项。整个 Move 在请求在途时 disabled，子项各自的 `canMove` 判定照旧。
+- **跨父级移动的目标候选**：页面用 `buildFolderTree(data, item)` 算出文件夹树（只含文件夹、按层级嵌套、同级按 position），注入 `MoveFormModal`；「根级」是弹窗自己补在最前面的虚拟节点（`value: null`）。传进去的是即将被移动的那条记录，util 内部只剪掉**它自己**：子孙只在从被保留的节点往下递归时才被访问，所以天然进不来——不剪则会成环，`buildTree` 里成环的行都成不了 root，整棵子树从界面消失且再也点不到；服务端在 `move.put.ts` 里也会再拒一次。
 - **错误处理（fail loudly）**：`selfFetch` 已在全局统一弹出错误 toast，业务代码**不写 try/catch 包裹请求**；失败时异常自然传播（unhandled rejection 即预期表现），成功路径（emit/refresh/toast）不执行
 - **例外**：`server/utils/jwt.ts` 的 `verifyToken` 用 try/catch 将校验失败转为布尔值（预期输入判断，非意外错误）
 
@@ -202,7 +211,11 @@
 
 - 图标使用 `@iconify-json/lucide` 集，格式如 `i-lucide-*`
 - 项目实际使用的组件：`UApp`、`UModal`、`UForm`、`UTree`、`UDropdownMenu`、`UInput`、`UButton`、`UFormField`、`UAuthForm`
-- `UTree` 没有拖拽能力（底层 Reka `TreeRoot` 亦无），排序只通过菜单上移/下移实现
+- `UTree` 没有拖拽能力（底层 Reka `TreeRoot` 亦无），排序只用右键菜单的移动项实现
+- **`UTree` 单选时 `modelValue` 收的是 item 对象本身**（Reka 内部用 `getKey` 比较，不比较引用），所以「当前选中的那一项」可以直接把对应节点对象传给 `:model-value`，就得到组件默认的选中样式（`selected` 变体是 `before:bg-elevated`）。书签页为了让节点当导航链接用，在 `treeLinkUi` 里覆盖掉了 hover/选中背景；`MoveFormModal` 是选择器，**不要套那个 `ui`**
+- **点击 `UTree` 节点会同时触发选中与折叠/展开**（Reka `TreeItem` 的 onClick 先 select 再 toggle），没有单独的展开按钮。所以移动弹窗给有子节点的项设了 `defaultExpanded: true`，目标一次全部可见、点一下即可选中（这也意味着点父级会顺手折叠它）
+- **`UTree` 的 `get-key` 会被塞一个空对象**：Reka 用 `getKey(modelValue ?? {})` 探测「当前没有选中」，所以 `get-key` 必须对 `{}` 也安全——`bookmarks.vue` 写成 `String(menuBookmark(item)?.id)`。写成 `menuBookmark(item).id` 会在树挂载时抛 `Cannot read properties of undefined (reading 'id')`、**整页白屏**（这个坑真踩过一次：`String(undefined)` 无害，但多一层 `.id` 就不是了）
+- **`UDropdownMenu` 的 item 带 `children` 就渲染成二级菜单**（内部是 `DropdownMenu.Sub` / `SubTrigger`，自带右侧箭头，`SubTrigger` 上的 `disabled` 会连子菜单一起禁用，子项的 `onSelect` 照常生效）。鼠标悬停由 `pointermove` + 100ms 定时器触发打开；`UContextMenu` 走的是同一个 content 组件，所以右键菜单里也能用子菜单
 - Toast 通过 Nuxt UI 的 `useToast()` composable 调用，没有直接渲染 `UToast` 组件
 
 ## 项目技能

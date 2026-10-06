@@ -1,14 +1,21 @@
 <script setup lang="ts">
 import type { DropdownMenuItem, TreeItem } from '@nuxt/ui'
+import { menuBookmark } from '~/utils/bookmark-menu'
+import { buildFolderTree } from '~/utils/bookmark-tree'
 
 const bookmarkForm = useBookmarkForm()
 const folderForm = useFolderForm()
+const moveForm = useMoveForm()
 const { leftTree, rightTree, refresh, data } = useBookmarks()
 const { remove: removeBookmark } = useDeleteBookmark(refresh)
 const { remove: removeFolder } = useDeleteFolder(refresh)
-const { move, canMove, nextPosition } = useReorderBookmarks(data, refresh)
-const { getMenu: getBookmarkMenu } = useBookmarkMenu(bookmarkForm, removeBookmark, move, canMove)
-const { getMenu: getFolderMenu } = useFolderMenu(bookmarkForm, folderForm, removeFolder, move, canMove)
+const reorder = useReorderBookmarks(data, refresh)
+const { nextPosition } = reorder
+const { getMenu: getBookmarkMenu } = useBookmarkMenu(bookmarkForm, moveForm, removeBookmark, reorder)
+const { getMenu: getFolderMenu } = useFolderMenu(bookmarkForm, folderForm, moveForm, removeFolder, reorder)
+
+// 移动弹窗的目标树：所有文件夹（移动文件夹时由 buildFolderTree 剪掉自己与整棵子树），根级由弹窗补在最前面。
+const moveTargets = computed(() => buildFolderTree(data.value ?? [], moveForm.modal.item ?? undefined))
 
 const treeLinkUi = {
   link: 'hover:text-inherit hover:before:bg-transparent before:bg-inherit text-inherit',
@@ -28,7 +35,7 @@ function getMenu(item: TreeItem | undefined, left: boolean): DropdownMenuItem[][
     ]
     return [createItems]
   }
-  const b = (item as TreeItem & { _bookmark: Bookmark })._bookmark
+  const b = menuBookmark(item)
   return b.type === 'folder' && left ? getFolderMenu(item) : getBookmarkMenu(item)
 }
 
@@ -47,8 +54,9 @@ function openContextMenu(event: MouseEvent, left: boolean) {
   contextBookmark.value = token ? nodes.get(token) : undefined
 }
 
+// UTree 会拿一个空对象来探测 key（Reka 内部是 `getKey(modelValue ?? {})`），所以这里不能假设收到的都是真节点。
 function getItemKey(item: TreeItem): string {
-  return String((item as TreeItem & { id: number | string }).id)
+  return String(menuBookmark(item)?.id)
 }
 
 const contextLeftTree = computed<TreeItem[]>(() => withContextTokens(leftTree.value))
@@ -95,6 +103,12 @@ const contextRightTree = computed<TreeItem[]>(() => withContextTokens(rightTree.
       :next-position="nextPosition(folderForm.modal.parentId ?? null, 'folder')"
       @created="refresh"
       @updated="refresh"
+    />
+    <MoveFormModal
+      v-model:open="moveForm.modal.open"
+      :item="moveForm.modal.item"
+      :targets="moveTargets"
+      @moved="refresh"
     />
   </div>
 </template>

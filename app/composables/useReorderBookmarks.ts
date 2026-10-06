@@ -1,6 +1,7 @@
 import { sortBookmarks } from '~/utils/bookmark-tree'
 
-type MoveDirection = 'up' | 'down'
+// up / down 走一格，top / bottom 走到分组首尾：四者的边界条件与重排方式完全一样，只是目标下标不同。
+type MoveDirection = 'up' | 'down' | 'top' | 'bottom'
 
 export function useReorderBookmarks(
   data: Ref<Bookmark[] | null | undefined>,
@@ -34,7 +35,8 @@ export function useReorderBookmarks(
     const found = locate(id)
     if (!found)
       return false
-    return direction === 'up' ? found.index > 0 : found.index < found.group.length - 1
+    const atStart = direction === 'up' || direction === 'top'
+    return atStart ? found.index > 0 : found.index < found.group.length - 1
   }
 
   function nextPosition(parentId: number | null, type: 'folder' | 'bookmark'): number {
@@ -42,14 +44,8 @@ export function useReorderBookmarks(
     return group.reduce((max, b) => Math.max(max, b.position), 0) + 1
   }
 
-  async function move(id: number, direction: MoveDirection) {
-    const found = locate(id)
-    if (!found)
-      return
-    const { item, group, index } = found
-    const target = direction === 'up' ? index - 1 : index + 1
-    const ids = group.map(b => b.id).filter((_, i) => i !== index)
-    ids.splice(target, 0, item.id)
+  // 组内重排统一走 reorder：ids 必须是该 (parentId, type) 分组的完整成员顺序。
+  async function reorder(item: Bookmark, ids: number[]) {
     moving.value = true
     try {
       await selfFetch('/api/bookmarks/reorder', {
@@ -63,5 +59,24 @@ export function useReorderBookmarks(
     }
   }
 
-  return { move, canMove, nextPosition }
+  async function move(id: number, direction: MoveDirection) {
+    const found = locate(id)
+    // 已在两端就别动：否则 up 会算出 target = -1，splice(-1, 0, id) 会把这一项插到倒数第二（静默写坏顺序）。
+    if (!found || !canMove(id, direction))
+      return
+    const { item, group, index } = found
+    // 先把自己摘出去，再插到目标下标：首/尾一次到位，不用连着调 N 次「上一格」。
+    const target = {
+      up: index - 1,
+      down: index + 1,
+      top: 0,
+      bottom: group.length - 1,
+    }[direction]
+    const ids = group.map(b => b.id).filter((_, i) => i !== index)
+    ids.splice(target, 0, item.id)
+    await reorder(item, ids)
+  }
+
+  // 跨父级移动不在这里：由 MoveFormModal 自己发 PUT /api/bookmarks/move，与其他表单弹窗一致（弹窗发请求 + emit，页面 refresh）。
+  return { moving, move, canMove, nextPosition }
 }
