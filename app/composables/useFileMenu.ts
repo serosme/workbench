@@ -17,14 +17,14 @@ export function useFileMenu(
       return [
         [
           {
-            label: '上传文件',
+            label: 'Upload File',
             icon: 'i-lucide-upload',
             onSelect() { uploadForm.open(node.key) },
           },
         ],
         [
           {
-            label: '删除文件夹',
+            label: 'Delete Folder',
             icon: 'i-lucide-trash',
             onSelect() { deleteForm.open(node) },
           },
@@ -36,14 +36,14 @@ export function useFileMenu(
       return [
         [
           {
-            label: '下载文件',
+            label: 'Download File',
             icon: 'i-lucide-download',
             onSelect() { download(node) },
           },
         ],
         [
           {
-            label: '删除文件',
+            label: 'Delete File',
             icon: 'i-lucide-trash',
             onSelect() { deleteForm.open(node) },
           },
@@ -53,7 +53,7 @@ export function useFileMenu(
 
     return [[
       {
-        label: '上传文件',
+        label: 'Upload File',
         icon: 'i-lucide-upload',
         onSelect() { uploadForm.open() },
       },

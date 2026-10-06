@@ -11,7 +11,7 @@ const { getMenu } = useFileMenu(uploadForm, deleteForm)
     <UButton
       to="/bookmarks"
       icon="i-lucide-bookmark"
-      aria-label="书签"
+      aria-label="Bookmarks"
       color="neutral"
       variant="ghost"
       class="fixed bottom-4 right-4"

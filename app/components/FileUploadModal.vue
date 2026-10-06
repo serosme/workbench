@@ -54,30 +54,30 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <UModal :open="open" title="上传文件" @update:open="emit('update:open', $event)">
+  <UModal :open="open" title="Upload File" @update:open="emit('update:open', $event)">
     <template #body>
       <UForm :state="{ target }" class="space-y-4" @submit="handleSubmit">
-        <UFormField label="文件" required>
+        <UFormField label="File" required>
           <div class="flex items-center gap-2">
             <UButton
               icon="i-lucide-file-plus"
               color="neutral"
               variant="outline"
-              label="选择文件"
+              label="Choose File"
               class="cursor-pointer"
               :disabled="submitting"
               @click="fileInput?.click()"
             />
             <span class="truncate text-sm text-muted">
-              {{ file?.name || '未选择' }}
+              {{ file?.name || 'No file chosen' }}
             </span>
           </div>
           <input ref="fileInput" type="file" class="hidden" @change="pickFile">
         </UFormField>
-        <UFormField label="路径">
-          <UInput v-model="path" class="w-full" :disabled="submitting" placeholder="留空表示根目录" />
+        <UFormField label="Path">
+          <UInput v-model="path" class="w-full" :disabled="submitting" placeholder="Leave empty for root" />
         </UFormField>
-        <UFormField label="完整路径">
+        <UFormField label="Full Path">
           <UInput :model-value="target" class="w-full" readonly />
         </UFormField>
         <div v-if="submitting" class="space-y-1">
@@ -89,7 +89,7 @@ async function handleSubmit() {
           </p>
         </div>
         <UButton type="submit" :disabled="!file" :loading="submitting">
-          上传
+          Upload
         </UButton>
       </UForm>
     </template>
