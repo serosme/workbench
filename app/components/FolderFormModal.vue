@@ -22,6 +22,7 @@ const formState = reactive({
 })
 
 const submitting = ref(false)
+const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')
 
 watch(() => props.open, (open) => {
   if (open) {
@@ -86,14 +87,18 @@ async function handleSubmit() {
 <template>
   <UModal :open="open" :title="title" @update:open="emit('update:open', $event)">
     <template #body>
-      <UForm :state="formState" class="space-y-4" :validate="validate" @submit="handleSubmit">
+      <UForm ref="formRef" :state="formState" class="space-y-4" :validate="validate" @submit="handleSubmit">
         <UFormField label="Name" name="name" required>
           <UInput v-model="formState.name" class="w-full" />
         </UFormField>
-        <UButton type="submit" :loading="submitting">
+      </UForm>
+    </template>
+    <template #footer>
+      <div class="flex justify-end gap-2 w-full">
+        <UButton :loading="submitting" @click="formRef?.submit()">
           {{ mode === 'create' ? 'Create' : 'Save' }}
         </UButton>
-      </UForm>
+      </div>
     </template>
   </UModal>
 </template>

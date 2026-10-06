@@ -15,6 +15,7 @@ const file = ref<File>()
 const path = ref('')
 const progress = ref(0)
 const submitting = ref(false)
+const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')
 
 watch(() => props.open, (open) => {
   if (open) {
@@ -56,7 +57,7 @@ async function handleSubmit() {
 <template>
   <UModal :open="open" title="Upload File" @update:open="emit('update:open', $event)">
     <template #body>
-      <UForm :state="{ target }" class="space-y-4" @submit="handleSubmit">
+      <UForm ref="formRef" :state="{ target }" class="space-y-4" @submit="handleSubmit">
         <UFormField label="File" required>
           <div class="flex items-center gap-2">
             <UButton
@@ -88,10 +89,14 @@ async function handleSubmit() {
             {{ progress }}%
           </p>
         </div>
-        <UButton type="submit" :disabled="!file" :loading="submitting">
+      </UForm>
+    </template>
+    <template #footer>
+      <div class="flex justify-end gap-2 w-full">
+        <UButton :disabled="!file" :loading="submitting" @click="formRef?.submit()">
           Upload
         </UButton>
-      </UForm>
+      </div>
     </template>
   </UModal>
 </template>

@@ -18,6 +18,7 @@ const formState = reactive({
 })
 
 const submitting = ref(false)
+const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')
 
 watch(() => props.open, (open) => {
   if (open)
@@ -53,7 +54,7 @@ async function handleSubmit() {
     @update:open="emit('update:open', $event)"
   >
     <template #body>
-      <UForm :state="formState" class="space-y-4" @submit="handleSubmit">
+      <UForm ref="formRef" :state="formState" class="space-y-4" @submit="handleSubmit">
         <UTextarea
           v-model="formState.content"
           class="w-full"
@@ -63,10 +64,14 @@ async function handleSubmit() {
           :disabled="submitting"
           placeholder="Write something…"
         />
-        <UButton type="submit" :disabled="!formState.content.trim()" :loading="submitting">
+      </UForm>
+    </template>
+    <template #footer>
+      <div class="flex justify-end gap-2 w-full">
+        <UButton :disabled="!formState.content.trim()" :loading="submitting" @click="formRef?.submit()">
           Save
         </UButton>
-      </UForm>
+      </div>
     </template>
   </UModal>
 </template>

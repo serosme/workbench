@@ -21,6 +21,7 @@ const formState = reactive<{ target: number | null }>({
 })
 
 const submitting = ref(false)
+const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')
 
 // 底色和书签页主树一样去掉（页面那份见 bookmarks.vue 的 treeLinkUi），但这里是选择器、必须能看出选的是哪个：
 // 所以选中的那一行保留文字变色（aria-selected 由 UTree 打在节点上），悬停不上色、免得和选中混淆。
@@ -96,16 +97,20 @@ async function handleSubmit() {
 <template>
   <UModal :open="open" :title="title" :description="item?.name" :ui="{ content: 'max-w-2xl' }" @update:open="emit('update:open', $event)">
     <template #body>
-      <UForm :state="formState" class="space-y-4" @submit="handleSubmit">
+      <UForm ref="formRef" :state="formState" class="space-y-4" @submit="handleSubmit">
         <UFormField label="Move to" name="target" help="Placed last in the folder">
           <div class="w-full max-h-96 overflow-y-auto rounded-md border border-default p-1">
             <UTree :items="items" :get-key="getKey" :model-value="selected" :disabled="submitting" :ui="treeLinkUi" />
           </div>
         </UFormField>
-        <UButton type="submit" :loading="submitting">
+      </UForm>
+    </template>
+    <template #footer>
+      <div class="flex justify-end gap-2 w-full">
+        <UButton :loading="submitting" @click="formRef?.submit()">
           Move
         </UButton>
-      </UForm>
+      </div>
     </template>
   </UModal>
 </template>
