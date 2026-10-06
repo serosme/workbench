@@ -87,11 +87,11 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <UModal :open="open" :title="title" :description="item?.name" @update:open="emit('update:open', $event)">
+  <UModal :open="open" :title="title" :description="item?.name" :ui="{ content: 'max-w-2xl' }" @update:open="emit('update:open', $event)">
     <template #body>
       <UForm :state="formState" class="space-y-4" @submit="handleSubmit">
         <UFormField label="Move to" name="target" help="Placed last in the folder">
-          <div class="w-full max-h-64 overflow-y-auto rounded-md border border-default p-1">
+          <div class="w-full max-h-96 overflow-y-auto rounded-md border border-default p-1">
             <UTree :items="items" :get-key="getKey" :model-value="selected" :disabled="submitting" />
           </div>
         </UFormField>

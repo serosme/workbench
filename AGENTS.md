@@ -216,6 +216,7 @@
 - **点击 `UTree` 节点会同时触发选中与折叠/展开**（Reka `TreeItem` 的 onClick 先 select 再 toggle），没有单独的展开按钮。所以移动弹窗给有子节点的项设了 `defaultExpanded: true`，目标一次全部可见、点一下即可选中（这也意味着点父级会顺手折叠它）
 - **`UTree` 的 `get-key` 会被塞一个空对象**：Reka 用 `getKey(modelValue ?? {})` 探测「当前没有选中」，所以 `get-key` 必须对 `{}` 也安全——`bookmarks.vue` 写成 `String(menuBookmark(item)?.id)`。写成 `menuBookmark(item).id` 会在树挂载时抛 `Cannot read properties of undefined (reading 'id')`、**整页白屏**（这个坑真踩过一次：`String(undefined)` 无害，但多一层 `.id` 就不是了）
 - **`UDropdownMenu` 的 item 带 `children` 就渲染成二级菜单**（内部是 `DropdownMenu.Sub` / `SubTrigger`，自带右侧箭头，`SubTrigger` 上的 `disabled` 会连子菜单一起禁用，子项的 `onSelect` 照常生效）。鼠标悬停由 `pointermove` + 100ms 定时器触发打开；`UContextMenu` 走的是同一个 content 组件，所以右键菜单里也能用子菜单
+- **弹窗尺寸按需在实例上写 `ui`**：`UModal` 默认宽度 `max-w-lg`（512px），表单/上传/删除弹窗都够用；只有移动弹窗传 `:ui="{ content: 'max-w-2xl' }"`（672px），因为候选树宽一点更好读。移动弹窗的候选树容器是 `max-h-96`（384px）：候选树是整棵展开的（本地数据实测内容高约 1100px），再高会顶到弹窗自身的视口上限，超出部分由容器自己滚动。`ui.content` 与主题里的 `max-w-lg` 冲突由 tailwind-merge 解决，主题的 `bg-default` / `rounded-lg` / `ring` 等类都保留
 - Toast 通过 Nuxt UI 的 `useToast()` composable 调用，没有直接渲染 `UToast` 组件
 
 ## 项目技能
