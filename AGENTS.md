@@ -1,6 +1,6 @@
 # Homepage Agent Instructions
 
-个人自用的 Nuxt 4 书签与文件管理应用：单用户密码登录，书签页为左右双树，文件页为文件树 + 预留预览区；书签节点及空白区域、文件树节点及空白区域均通过右键打开上下文菜单。
+个人自用的 Nuxt 4 书签、文件与笔记管理应用：单用户密码登录，书签页为左右双树，文件页为文件树 + 预留预览区，笔记页为瀑布流卡片；书签节点及空白区域、文件树节点及空白区域、笔记卡片及空白区域均通过右键打开上下文菜单。
 
 这是个人项目，使用场景、数据来源和操作流程都是明确且受控的：实现时保持简单、直接，优先复用现有模块，不为假想的通用性增加抽象层或防御代码。
 
@@ -22,12 +22,13 @@
 - **F10 部署与备份**：`pnpm deploy` 构建 Workers 产物并应用 D1 迁移；`pnpm backup` 导出远程 D1 到 `db.sql`。
 - **F11 文件树**：使用 NuxtHub Blob Storage（本地 FS driver、生产 Cloudflare R2 driver），通过对象路径构建左侧完整文件树（文件夹与文件统一使用前端 lucide 图标），支持文件夹、文件和空白处右键菜单，空白处可上传文件；文件可下载、删除，文件夹可删除并往里上传（没有整夹下载、也没有重命名），上传弹窗可选择文件并填写路径前缀（默认取所在文件夹）并显示分片上传进度，右侧预留预览窗格；页面使用 `pl-[30vw] pr-[20vw] py-[10vh]` 留白与左右各半布局，视口高度铺满。
 - **F12 工程配置与项目技能**：Nuxt / ESLint / TypeScript / Wrangler 配置、编辑器设置、Agent 技能锁定。
+- **F13 笔记（临时片段）**：`/notes` 一页，卡片瀑布流按 `createdAt` 倒序展示所有片段；瀑布流区域空白处右键即可新建（没有独立的「新建」按钮），卡片左键点击直接进入编辑、右键菜单同样有编辑 / 删除（没有单独的只读详情弹窗）；新建与编辑共用一个 `UTextarea` 弹窗（create/edit 双模式，固定 `rows=20`、不加 `autoresize`，内容超出就出滚动条），删除直接删、不弹确认框。瀑布流用 `UScrollArea` 的 `virtualize` + `lanes`（Nuxt UI 官方的 masonry 用法），列数按视口宽度取 1/2/3；卡片正文 `max-h-40` 在整行处裁断（不用 `line-clamp` 的省略号、也不加渐隐）；卡片自己带 `data-note-id`，右键时用 `closest` 定位，与书签/文件树的 token class 方案不同（那里是 `UTree` 不转发任意属性才被迫用 token）。三个页面右下角统一由 `PageNav` 渲染另外两页的入口。
 
 ### 目录与功能对应
 
 ```text
 .
-├─ app/                            # F1–F8：Nuxt 前端
+├─ app/                            # F1–F8/F13：Nuxt 前端
 │  ├─ app.vue                      # F3：Nuxt 根组件，UApp 包裹 NuxtPage
 │  ├─ assets/css/main.css          # F12：Tailwind CSS v4 + Nuxt UI 全局样式
 │  ├─ components/
@@ -37,6 +38,8 @@
 │  │  ├─ BookmarkFormModal.vue     # F4：书签新增/编辑弹窗（create/edit 双模式，submitting 防重复提交）
 │  │  ├─ FolderFormModal.vue       # F4：文件夹新增/编辑弹窗（create/edit 双模式，submitting 防重复提交）
 │  │  ├─ MoveFormModal.vue         # F6：移动弹窗（UTree 选目标父级：根级 + 文件夹树，默认全展开并选中当前父级；自己发请求 + emit moved）
+│  │  ├─ NoteFormModal.vue         # F13：笔记新增/编辑弹窗（item 为空即新增、有值即编辑，UTextarea，submitting 防重复提交）
+│  │  ├─ PageNav.vue               # F13：三个页面共用的右下角导航（fixed，自动过滤掉当前页，只留另外两页的图标按钮）
 │  │  └─ LoginForm.vue             # F1：登录表单（UAuthForm，密码登录）
 │  ├─ composables/
 │  │  ├─ useFiles.ts                 # F11：获取 Blob 文件树与分片上传（带进度回调）
@@ -52,18 +55,23 @@
 │  │  ├─ useDeleteFolder.ts        # F5：文件夹删除（DELETE + 调用传入的 refresh + toast）
 │  │  ├─ useReorderBookmarks.ts    # F6/F7：move / canMove（up|down|top|bottom 共用一套）/ nextPosition，只管组内重编号
 │  │  ├─ useBookmarkMenu.ts        # F3/F6：书签节点右键菜单（打开新标签/Move 子菜单/编辑/删除）
-│  │  └─ useFolderMenu.ts          # F3/F4/F6：文件夹节点右键菜单（新建×2/Move 子菜单/编辑/删除）
+│  │  ├─ useFolderMenu.ts          # F3/F4/F6：文件夹节点右键菜单（新建×2/Move 子菜单/编辑/删除）
+│  │  ├─ useNotes.ts               # F13：数据获取（useSelfFetch('/api/notes')，倒序由服务端给出）
+│  │  ├─ useNoteForm.ts            # F13：笔记弹窗状态管理（openCreate/openEdit，无 parentId/position）
+│  │  ├─ useNoteMenu.ts            # F13：笔记右键菜单（空白→新建笔记；卡片→编辑/删除）
+│  │  └─ useDeleteNote.ts          # F13：笔记删除（DELETE + 调用传入的 refresh + toast）
 │  ├─ pages/
 │  │  ├─ index.vue                 # F3：重定向到 /bookmarks
-│  │  ├─ bookmarks.vue             # F3：主页面，书签双树视图；节点及左右铺满视口高度的空白区域右键打开菜单，隐藏树节点默认尾随箭头，右下角链接到 /files
-│  │  ├─ files.vue                 # F11：文件树与右侧预留空白预览区，右下角链接回 /bookmarks
+│  │  ├─ bookmarks.vue             # F3：主页面，书签双树视图；节点及左右铺满视口高度的空白区域右键打开菜单，隐藏树节点默认尾随箭头
+│  │  ├─ files.vue                 # F11：文件树与右侧预留空白预览区
+│  │  ├─ notes.vue                 # F13：笔记瀑布流（UScrollArea + virtualize.lanes），卡片左键编辑、右键编辑/删除，空白处右键新建
 │  │  └─ login.vue                 # F1：登录页（redirect 查询参数回跳）
 │  └─ utils/
 │     ├─ bookmark-menu.ts          # F3/F6：节点菜单共用部分（moveMenuItem 的 Move 二级菜单、menuBookmark 取原始记录）
 │     ├─ bookmark-tree.ts          # F2/F7：sortBookmarks 排序、buildTree 组树、buildFolderTree 移动目标文件夹树
 │     ├─ selfFetch.ts              # F8：$fetch 实例（全局错误 toast + 401 跳转登录）
 │     └─ useSelfFetch.ts           # F8：useFetch 封装（基于 selfFetch）
-├─ server/                         # F1/F2/F4–F7/F9/F11：Nitro 服务端
+├─ server/                         # F1/F2/F4–F7/F9/F11/F13：Nitro 服务端
 │  ├─ middleware/auth.ts           # F1：/api/* 校验 token，/api/auth/* 放行
 │  ├─ api/auth/login.post.ts       # F1：POST /api/auth/login，校验密码并设置 httpOnly cookie
 │  ├─ api/bookmarks/index.get.ts   # F2：GET /api/bookmarks，取全部行
@@ -76,14 +84,18 @@
 │  ├─ api/files/multipart/         # F11：分片上传路由 [action]/[...pathname]，交给 blob.handleMultipartUpload
 │  ├─ api/files/download.get.ts    # F11：GET /api/files/download?path=，下载 Blob 文件
 │  ├─ api/files/delete.delete.ts   # F11：DELETE /api/files/delete?path=，删除单个文件或整个文件夹前缀
-│  ├─ db/schema.ts                 # F9：bookmarks 表定义（Drizzle ORM）
+│  ├─ api/notes/index.get.ts       # F13：GET /api/notes，按 createdAt 倒序（同毫秒用 id 倒序兜底）
+│  ├─ api/notes/index.post.ts      # F13：POST /api/notes，写入 content 与服务端生成的 createdAt
+│  ├─ api/notes/[id].put.ts        # F13：PUT /api/notes/:id，只改 content（createdAt 不动）
+│  ├─ api/notes/[id].delete.ts     # F13：DELETE /api/notes/:id，直接删（不存在时删 0 行）
+│  ├─ db/schema.ts                 # F9/F13：bookmarks 与 notes 表定义（Drizzle ORM）
 │  ├─ db/migrations/sqlite/        # F9：迁移 SQL 与 meta
 │  └─ utils/
 │     ├─ jwt.ts                    # F1：JWT 签发/验证（jose，密钥为 AUTH_SECRET）
 │     ├─ blob-files.ts             # F11：listBlobs，拉全量对象后按前缀过滤（绕开 fs driver 的 prefix 目录语义）
 │     ├─ blob-tree.ts              # F11：buildFileTree，把 Blob 对象路径组装为文件树
 │     └─ renumber.ts               # F7：renumberGroupQuery，单条语句把分组 position 重写为 1..n
-├─ shared/types/db.ts              # F9：前后端共享类型（Bookmark, InsertBookmark）
+├─ shared/types/db.ts              # F9/F13：前后端共享类型（Bookmark/InsertBookmark、Note/InsertNote）
 ├─ shared/types/files.ts           # F11：文件树节点类型（FileTreeNode）
 ├─ .agents/skills/                 # F12：nuxt-ui / cloudflare / wrangler 技能安装内容
 ├─ .vscode/settings.json           # F12：ESLint 保存自动修复、禁用 Prettier、Tailwind 提示
@@ -138,6 +150,10 @@
 | POST   | `/api/files/multipart/[action]/[...pathname]` | 分片上传：action 为 create / upload / complete / abort，由客户端 `useMultipartUpload` 调用；分片按片缓冲，不受 128MB 内存与单请求 100MB 限制                                                                                                                                                            |
 | GET    | `/api/files/download?path=`                   | 下载指定 Blob 文件，响应以附件形式返回                                                                                                                                                                                                                                                                  |
 | DELETE | `/api/files/delete?path=`                     | 删除 Blob：`path` 以 `/` 结尾（文件夹）时用 `listBlobs` 取出整棵子树再一次性 `blob.del`，否则删除单个文件                                                                                                                                                                                               |
+| GET    | `/api/notes`                                  | 获取全部笔记，`ORDER BY createdAt DESC, id DESC`（createdAt 是毫秒时间戳，同毫秒由 id 兜底）                                                                                                                                                                                                            |
+| POST   | `/api/notes`                                  | 创建笔记（body: content），`createdAt` 由服务端写 `Date.now()`，不接受客户端传时间                                                                                                                                                                                                                      |
+| PUT    | `/api/notes/:id`                              | 只更新 `content`；`createdAt` 保持不变，所以编辑不会让卡片在瀑布流里换位置                                                                                                                                                                                                                              |
+| DELETE | `/api/notes/:id`                              | 删除笔记；不做存在性预检，不存在时删 0 行（幂等）                                                                                                                                                                                                                                                       |
 
 除 `/api/auth/login` 外所有 API 均需登录（`server/middleware/auth.ts` 校验 token）。`reorder` / `move` 是静态路由，优先于 `[id]` 动态路由匹配。
 
@@ -162,6 +178,16 @@
 | position | integer | 排序位置                  |
 
 历史分组的 position 可以有偏移或间隙；删除或移动后，目标 `(parentId, type)` 分组会归一化为 `1..n`。
+
+### 表结构：notes
+
+| 字段      | 类型    | 说明                             |
+| --------- | ------- | -------------------------------- |
+| id        | integer | 主键，自增                       |
+| content   | text    | 笔记正文（必填，纯文本保留换行） |
+| createdAt | integer | 创建时间，毫秒时间戳             |
+
+没有 `position`：瀑布流顺序完全由 `createdAt` 决定，不需要书签那套分组重编号。
 
 ## 文件存储
 
@@ -193,7 +219,12 @@
 ## 前端架构约定
 
 - **删除刷新时序**：`useDeleteBookmark` / `useDeleteFolder` 在 DELETE 成功后立即调用传入的 `refresh()`（不 await），随后提示成功；文件删除 composable 不刷新，由页面在删除事件后刷新。
-- **文案语言与页面导航**：书签页菜单、弹窗和提示使用英文；文件树页菜单、弹窗等界面文案使用中文，但所有 Toast 提示统一使用英文；`/files` 没有全局导航，两页右下角各有一个 `fixed bottom-4 right-4` 的仅图标 `UButton to=...` 链接互相跳转（书签页文件树图标 → `/files`，文件页书签图标 → `/bookmarks`）
+- **文案语言与页面导航**：所有页面的菜单、弹窗、提示等界面文案统一使用英文（Toast 也是英文，`selfFetch` 的错误提示见 F8）；代码注释仍用中文。三个页面右下角统一渲染 `PageNav`（`fixed bottom-4 right-4` 的竖排仅图标按钮，按 `useRoute().path` 过滤掉当前页、只留另外两页互跳），页面自己不再写导航按钮
+- **笔记页瀑布流**：用 `UScrollArea` 的 `virtualize` + `lanes`（`{ lanes, gap: 16, estimateSize: 180 }`），这是 Nuxt UI 官方的 masonry 用法——`virtualize` 打开分道虚拟滚动，`lanes` 给列数，`estimateSize` 只是首屏估算、真实高度由库对每项做 `measureElement`。`lanes` 是 `ref`，由 `window.innerWidth` 的 resize 监听算成 1/2/3（内容区是 `pl-[30vw] pr-[20vw]` 剩下的 50vw）；**不要退回 CSS multi-column**（`columns-*` + `break-inside-avoid`）：那是本项目引入 Nuxt UI 瀑布流之前的写法，列平衡与卡片定位都更笨拙
+- **笔记卡片的右键定位**：卡片是页面自己渲染的 DOM，直接挂 `data-note-id`，`@contextmenu` 里用 `closest('[data-note-id]')` 反查记录；**不要照搬书签/文件树的 token class + Map 方案**——那是 `UTree` 只透传 `item.class`、不转发任意属性导致的变通。`closest` 取不到就是空白处 → 根级菜单（新建笔记）。右键处理器里**不能 `event.stopPropagation()`**：Reka 的 ContextMenuTrigger 要靠事件冒泡到触发元素才会在指针位置打开菜单
+- **笔记卡片的预览**：卡片正文 `max-h-40 overflow-hidden`（`text-sm` 行高 20px，160px 正好 8 行）在**整行处裁断**，既不加 `line-clamp` 的省略号（代码类文本结束后挂个 `...` 很难看），也不加渐隐；完整内容靠左键 `@click` 直接打开**编辑**弹窗（`noteForm.openEdit`），与右键菜单的「Edit」是同一个入口，**没有单独的只读详情弹窗**。新建/编辑弹窗的 `UTextarea` 固定 `:rows="20"`（配 `:ui="{ base: 'resize-none' }"`、不加 `autoresize`），内容超出后文本框自己出滚动条。卡片高度必须有上界，虚拟瀑布的 `estimateSize` 与 `measureElement` 都指望它
+- **笔记删除不弹确认框**：与书签一致（只有文件删除有 `FileDeleteModal`）；`useDeleteNote(refresh)` 在 DELETE 成功后立即调 `refresh()` 再 toast，与 `useDeleteBookmark` 同构
+- **笔记顺序只由服务端给**：`createdAt` 由服务端写 `Date.now()`、编辑不改，顺序完全取自 `GET /api/notes` 的 `ORDER BY createdAt DESC, id DESC`，页面不做客户端排序（书签那套 `sortBookmarks` 是 position 模型专用的）
 - **浅层封装**：书签/文件夹的**新增、编辑、删除**逻辑全部分离（useBookmarkForm / useFolderForm / useDeleteBookmark / useDeleteFolder），移动弹窗状态独立成 `useMoveForm`，即使代码相似也不合并
 - **单一职能**：数据（`useBookmarks`）、弹窗状态（`*Form`）、删除（`useDelete*`）、排序（`useReorderBookmarks`）、菜单（`*Menu`）各自独立，互不混合
 - **依赖注入**：页面（bookmarks.vue）实例化 composable 后以参数注入菜单 composable（如 `useFolderMenu(bookmarkForm, folderForm, removeFolder, reorder)`，`reorder` 就是 `useReorderBookmarks` 的返回值），菜单内部不自行实例化状态类 composable
@@ -210,13 +241,15 @@
 ## Nuxt UI
 
 - 图标使用 `@iconify-json/lucide` 集，格式如 `i-lucide-*`
-- 项目实际使用的组件：`UApp`、`UModal`、`UForm`、`UTree`、`UDropdownMenu`、`UInput`、`UButton`、`UFormField`、`UAuthForm`
+- 项目实际使用的组件：`UApp`、`UModal`、`UForm`、`UTree`、`UDropdownMenu`、`UContextMenu`、`UInput`、`UTextarea`、`UCard`、`UEmpty`、`UScrollArea`、`UButton`、`UFormField`、`UAuthForm`
+- **`UScrollArea` 的 `virtualize` 需要自己的高度**：它自带 `overflow-y-auto`（主题的 root 槽），页面里必须给定高度（笔记页是外层 `h-screen` + 子元素 `h-full`），否则没有滚动容器、虚拟列表量不出视口。`items` 传数组、用默认插槽的 `{ item }` 渲染，虚拟化分支下每项是绝对定位的 `data-slot="item"` 包装，槽里的内容决定实际高度；`@tanstack/vue-virtual` 是 `@nuxt/ui` 自己的依赖，不需要在 package.json 里再声明
+- 卡片用 `UCard`（默认 `outline` 变体：`bg-default ring ring-default`），但在笔记页必须加 `:ui="{ root: 'ring-inset' }"`——`UScrollArea` 的 root 是 `overflow-y-auto overflow-x-hidden`，而 `ring` 是画在卡片边框盒之外的 box-shadow，首行/末行/最左列/最右列卡片的描边落在滚动容器内容边界上会被裁掉；`ring-inset` 把描边画进卡片内部，滚动与测量都不受影响。不要手写 `ring-default` / `bg-default` 这类语义色 class 去拼表面；空状态用 `UEmpty`（`variant="naked"` 没有底色和边框，配合 `class="h-full"` 居中，且整块区域仍可右键）
 - `UTree` 没有拖拽能力（底层 Reka `TreeRoot` 亦无），排序只用右键菜单的移动项实现
 - **`UTree` 单选时 `modelValue` 收的是 item 对象本身**（Reka 内部用 `getKey` 比较，不比较引用），传对应节点对象进去就有主题默认的选中样式（`selected` 变体给的是 `before:bg-elevated` 底色 + `text-highlighted`，hover 还有 `hover:before:bg-elevated/50`）。选中样式统一由 `ui.link` 覆盖决定，两处不一样：书签页的树是导航，`treeLinkUi` 把底色和文字色一起去掉（`hover:text-inherit hover:before:bg-transparent before:bg-inherit text-inherit`）；移动弹窗是选择器，底色同样去掉，但**必须留一个选中标记**，所以多了 `aria-selected:text-primary`（选中行文字变主题色、其余行 `text-inherit`，悬停不上色以免和选中混淆）——`aria-selected` 是 UTree/Reka 打在节点上的，不需要额外 data 属性。两份 `ui` 各写一遍、不抽常量。**别把书签页那份里的 `linkTrailingIcon: 'hidden'` 抄进弹窗**：那是隐藏导航箭头的，选择器要靠箭头看展开/折叠
 - **点击 `UTree` 节点会同时触发选中与折叠/展开**（Reka `TreeItem` 的 onClick 先 select 再 toggle），没有单独的展开按钮。所以移动弹窗给有子节点的项设了 `defaultExpanded: true`，目标一次全部可见、点一下即可选中（这也意味着点父级会顺手折叠它）
 - **`UTree` 的 `get-key` 会被塞一个空对象**：Reka 用 `getKey(modelValue ?? {})` 探测「当前没有选中」，所以 `get-key` 必须对 `{}` 也安全——`bookmarks.vue` 写成 `String(menuBookmark(item)?.id)`。写成 `menuBookmark(item).id` 会在树挂载时抛 `Cannot read properties of undefined (reading 'id')`、**整页白屏**（这个坑真踩过一次：`String(undefined)` 无害，但多一层 `.id` 就不是了）
 - **`UDropdownMenu` 的 item 带 `children` 就渲染成二级菜单**（内部是 `DropdownMenu.Sub` / `SubTrigger`，自带右侧箭头，`SubTrigger` 上的 `disabled` 会连子菜单一起禁用，子项的 `onSelect` 照常生效）。鼠标悬停由 `pointermove` + 100ms 定时器触发打开；`UContextMenu` 走的是同一个 content 组件，所以右键菜单里也能用子菜单
-- **弹窗尺寸按需在实例上写 `ui`**：`UModal` 默认宽度 `max-w-lg`（512px），表单/上传/删除弹窗都够用；只有移动弹窗传 `:ui="{ content: 'max-w-2xl' }"`（672px），因为候选树宽一点更好读。移动弹窗的候选树容器是 `max-h-96`（384px）：候选树是整棵展开的（本地数据实测内容高约 1100px），再高会顶到弹窗自身的视口上限，超出部分由容器自己滚动。`ui.content` 与主题里的 `max-w-lg` 冲突由 tailwind-merge 解决，主题的 `bg-default` / `rounded-lg` / `ring` 等类都保留
+- **弹窗尺寸按需在实例上写 `ui`**：`UModal` 没有 `size` 之类的 prop，宽度只能由 `ui.content` 覆盖（主题默认 `max-w-lg`，512px）；表单/上传/删除弹窗都用默认值，移动弹窗传 `:ui="{ content: 'max-w-2xl' }"`（672px，候选树宽一点更好读）、笔记的新建/编辑弹窗传 `max-w-4xl`（896px，长文输入更舒服）。移动弹窗的候选树容器是 `max-h-96`（384px）：候选树是整棵展开的（本地数据实测内容高约 1100px），再高会顶到弹窗自身的视口上限，超出部分由容器自己滚动。`ui.content` 与主题里的 `max-w-lg` 冲突由 tailwind-merge 解决，主题的 `bg-default` / `rounded-lg` / `ring` 等类都保留
 - Toast 通过 Nuxt UI 的 `useToast()` composable 调用，没有直接渲染 `UToast` 组件
 
 ## 项目技能

@@ -8,14 +8,7 @@ const { getMenu } = useFileMenu(uploadForm, deleteForm)
 
 <template>
   <div class="pl-[30vw] pr-[20vw] py-[10vh] flex h-screen">
-    <UButton
-      to="/bookmarks"
-      icon="i-lucide-bookmark"
-      aria-label="Bookmarks"
-      color="neutral"
-      variant="ghost"
-      class="fixed bottom-4 right-4"
-    />
+    <PageNav />
     <div class="w-1/2 min-w-0 h-full">
       <FileTree :items="tree" :get-menu="getMenu" />
     </div>

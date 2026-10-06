@@ -8,6 +8,13 @@
       "when": 1783326566861,
       "tag": "0000_giant_slapstick",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1791313245341,
+      "tag": "0001_modern_wildside",
+      "breakpoints": true
     }
   ]
 }

@@ -65,13 +65,7 @@ const contextRightTree = computed<TreeItem[]>(() => withContextTokens(rightTree.
 
 <template>
   <div class="pl-[30vw] pr-[20vw] py-[10vh] flex h-screen">
-    <UButton
-      to="/files"
-      icon="i-lucide-folder-tree"
-      color="neutral"
-      variant="ghost"
-      class="fixed bottom-4 right-4"
-    />
+    <PageNav />
     <div class="w-1/2 min-w-0 h-full">
       <UContextMenu :items="contextMenuItems" class="block h-full">
         <div class="h-full min-h-32 w-full" @contextmenu="openContextMenu($event, true)">

@@ -8,3 +8,9 @@ export const bookmarks = sqliteTable('bookmarks', {
   url: text(),
   position: integer().notNull(),
 })
+
+export const notes = sqliteTable('notes', {
+  id: integer().primaryKey({ autoIncrement: true }),
+  content: text().notNull(),
+  createdAt: integer().notNull(),
+})
