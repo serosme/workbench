@@ -31,16 +31,7 @@ function openContextMenu(event: MouseEvent) {
   <div class="px-[25vw] py-[10vh] h-screen">
     <UContextMenu :items="contextMenuItems" class="block h-full">
       <div class="h-full" @contextmenu="openContextMenu">
-        <UEmpty
-          v-if="!notes.length"
-          icon="i-lucide-notebook-pen"
-          title="No notes yet"
-          description="Right-click the blank area to add one"
-          variant="naked"
-          class="h-full"
-        />
         <UScrollArea
-          v-else
           class="h-full"
           :items="notes"
           :virtualize="{ lanes, gap: 16, estimateSize: 180 }"
