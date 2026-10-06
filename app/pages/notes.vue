@@ -9,7 +9,7 @@ const { getMenu } = useNoteMenu(noteForm, remove)
 const contextNote = ref<Note>()
 const contextMenuItems = computed<DropdownMenuItem[][]>(() => getMenu(contextNote.value))
 
-// 内容区是 pl-30vw / pr-20vw 剩下的 50vw，列数按视口宽度给
+// 内容区左右各留 px-25vw（居中；书签/文件页的 pl-30vw/pr-20vw 偏右是给树留的，笔记页不需要），剩 50vw 用来估列数
 const lanes = ref(2)
 function updateLanes() {
   lanes.value = window.innerWidth >= 1600 ? 3 : window.innerWidth >= 1000 ? 2 : 1
@@ -28,7 +28,7 @@ function openContextMenu(event: MouseEvent) {
 </script>
 
 <template>
-  <div class="pl-[30vw] pr-[20vw] py-[10vh] h-screen">
+  <div class="px-[25vw] py-[10vh] h-screen">
     <UContextMenu :items="contextMenuItems" class="block h-full">
       <div class="h-full" @contextmenu="openContextMenu">
         <UEmpty
