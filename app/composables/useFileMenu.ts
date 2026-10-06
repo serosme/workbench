@@ -25,7 +25,8 @@ export function useFileMenu(
         [
           {
             label: 'Delete Folder',
-            icon: 'i-lucide-trash',
+            icon: 'i-lucide-trash-2',
+            color: 'error',
             onSelect() { remove(node.key) },
           },
         ],
@@ -44,7 +45,8 @@ export function useFileMenu(
         [
           {
             label: 'Delete File',
-            icon: 'i-lucide-trash',
+            icon: 'i-lucide-trash-2',
+            color: 'error',
             onSelect() { remove(node.key) },
           },
         ],
