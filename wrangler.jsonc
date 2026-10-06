@@ -11,5 +11,10 @@
       "binding": "BLOB",
       "bucket_name": "homepage-files"
     }
-  ]
+  ],
+  "observability": {
+    "enabled": true,
+    "logs": { "invocation_logs": true },
+    "traces": { "enabled": true }
+  }
 }
