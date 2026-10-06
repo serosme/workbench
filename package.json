@@ -6,7 +6,6 @@
     "typecheck": "nuxt typecheck",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "ncu": "npx --yes npm-check-updates",
     "generate:db": "nuxt db generate",
     "dev": "nuxt dev",
     "preview": "nuxt preview",
