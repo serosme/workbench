@@ -1,7 +1,4 @@
 minimumReleaseAgeExcludePrune: true
-minimumReleaseAgeExclude:
-  - miniflare@5.20260926.1-alpha
-  - wrangler@4.144.0
 
 trustPolicy: no-downgrade
 trustPolicyExclude:
