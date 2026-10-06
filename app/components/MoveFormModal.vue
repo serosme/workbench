@@ -22,6 +22,12 @@ const formState = reactive<{ target: number | null }>({
 
 const submitting = ref(false)
 
+// 底色和书签页主树一样去掉（页面那份见 bookmarks.vue 的 treeLinkUi），但这里是选择器、必须能看出选的是哪个：
+// 所以选中的那一行保留文字变色（aria-selected 由 UTree 打在节点上），悬停不上色、免得和选中混淆。
+const treeLinkUi = {
+  link: 'text-inherit hover:text-inherit hover:before:bg-transparent before:bg-inherit aria-selected:text-primary',
+}
+
 interface MoveTarget extends TreeItem {
   value: number | null
   children?: MoveTarget[]
@@ -44,7 +50,8 @@ const items = computed<MoveTarget[]>(() => [
   ...toItems(props.targets),
 ])
 
-// UTree 单选时 modelValue 收的是 item 对象（内部按 getKey 比，不比较引用），传进去就有默认的选中样式。
+// UTree 单选时 modelValue 收的是 item 对象（内部按 getKey 比，不比较引用）。
+// 底色被上面的 treeLinkUi 去掉了，这个选中态只用来给当前目标上文字色。
 const selected = computed(() => findItem(items.value, formState.target))
 
 function findItem(nodes: MoveTarget[], value: number | null): MoveTarget | undefined {
@@ -92,7 +99,7 @@ async function handleSubmit() {
       <UForm :state="formState" class="space-y-4" @submit="handleSubmit">
         <UFormField label="Move to" name="target" help="Placed last in the folder">
           <div class="w-full max-h-96 overflow-y-auto rounded-md border border-default p-1">
-            <UTree :items="items" :get-key="getKey" :model-value="selected" :disabled="submitting" />
+            <UTree :items="items" :get-key="getKey" :model-value="selected" :disabled="submitting" :ui="treeLinkUi" />
           </div>
         </UFormField>
         <UButton type="submit" :loading="submitting">
