@@ -11,6 +11,9 @@ export default defineNuxtConfig({
     },
   },
   ssr: false,
+  experimental: {
+    typedPages: true,
+  },
   runtimeConfig: {
     authPassword: '',
   },
