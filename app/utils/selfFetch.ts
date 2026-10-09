@@ -7,7 +7,7 @@ export const selfFetch = $fetch.create({
       useToast().add({
         color: 'error',
         title: response.statusText,
-        description: response._data.message,
+        description: response._data?.message ?? response.statusText,
       })
     }
   },
