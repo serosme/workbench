@@ -11,7 +11,7 @@
 - **F1 登录**：单用户密码（环境变量 `NUXT_AUTH_PASSWORD`，即 `runtimeConfig.authPassword`）；校验通过后用 Nuxt 4.6 的 `useSession`（`nuxt/server`）写入 `nuxt-session` cookie（默认 httpOnly/secure/sameSite=lax，maxAge 1 天），密封用 Nuxt 的应用密钥 `NUXT_APP_SECRET`（≥32 字符，session 内部经 `deriveSecret` 读取）；除 `/api/auth/` 外所有 API 由 `server/middleware/auth.ts` 用 `getSession` 校验。
 - **F2 书签数据**：一次拉全量，`sortBookmarks` 排序后 `buildTree` 组树——左树为所有文件夹及其子书签，右树为根级书签。
 - **F3 双栏与节点菜单**：节点右键打开操作菜单，节点链接隐藏默认尾随箭头；左右面板及右键区域铺满视口高度，面板空白处右键新建（左：文件夹/书签，右：书签），无底部新建虚拟项。
-- **F4 新建/编辑**：书签、文件夹各一个 create/edit 双模式弹窗；新建位置由 `nextPosition(parentId, type)` 给出，提交带 `submitting` 守卫防重复提交。
+- **F4 新建/编辑**：书签、文件夹各一个 create/edit 双模式弹窗；新建位置由服务端在 `POST /api/bookmarks` 计算（见「排序模型」），提交带 `submitting` 守卫防重复提交。
 - **F5 删除**：非空文件夹拒绝删除；删除后同组剩余项整段重编号。
 - **F6 移动**：Up / Down（同级一步）、To Top / To Bottom（同级首尾，整组一次重编号）、To Folder（跨父级，`MoveFormModal` 选目标父级，落到目标分组末尾）收在节点菜单的 **Move 二级菜单**里；分组首尾时对应子项 disabled，请求在途时整个 Move 菜单 disabled。
 - **F7 排序位置模型**：见「前端架构约定」的「排序模型」「重编号实现」。
@@ -59,6 +59,7 @@
 - `DELETE /api/bookmarks/:id`：删除与同组剩余项重编号在同一个 `db.batch()` 里原子完成。
 - `PUT /api/bookmarks/reorder`：不校验 ids 覆盖度，由调用方保证传完整分组（见「重编号实现」）。
 - `PUT /api/bookmarks/:id`：只更新 `name` / `url`；`type` / `parentId` / `position` 是结构性字段，分别由创建、`move`、`reorder` 维护，编辑接口不动它们。
+- `POST /api/bookmarks`：`position` 由服务端按目标 `(parentId, type)` 分组计算（`max(position) + 1`，空分组为 1），客户端不提交 `position`。
 - `PUT /api/notes/:id` 只改 content、`createdAt` 不动；`DELETE /api/notes/:id` 不做存在性预检（删 0 行，幂等）。
 - `expenses` 的 CRUD 与 notes 同形；`GET /api/expenses` 按 `spentAt DESC, id DESC` 返回，`PUT /api/expenses/:id` 三个字段都可改（补记/改时间）。
 
@@ -141,7 +142,7 @@
 - **删除一律不弹确认框**：书签 / 文件夹 / 笔记 / 文件（含文件页的文件夹，会整棵删除）都是菜单项一点即删，没有确认弹窗、也没有撤销——个人自用项目刻意保持简单；删除菜单项统一用 `color: 'error'` + `i-lucide-trash-2`（标红）
 - **笔记顺序只由服务端给**：`createdAt` 由服务端写 `Date.now()`、编辑不改，顺序完全取自 `GET /api/notes` 的 `ORDER BY createdAt DESC, id DESC`，页面不做客户端排序（书签那套 `sortBookmarks` 是 position 模型专用的）
 - **单一职能 + 依赖注入**：数据（`useBookmarks` / `useFiles` / `useNotes`）、弹窗状态（`*Form`）、删除（`useDelete*`）、排序（`useReorderBookmarks`）、菜单（`*Menu`）各自独立、互不混合；书签/文件夹的新增、编辑、删除全部分离（即使代码相似也不合并），移动弹窗状态独立成 `useMoveForm`。页面（`bookmarks.vue`）实例化 composable 后以参数注入菜单（如 `useFolderMenu(bookmarkForm, folderForm, removeFolder, reorder)`），菜单内部不自行实例化状态类 composable
-- **排序模型**：分组键为 `(parentId, type)`，同组内 `sortBookmarks` 恒定「文件夹优先」→「position 升序」，因此 UI 中一段连续可视区间恰好等于一个分组。客户端排序是唯一权威（`leftTree` / `rightTree` 都经 `sortBookmarks`），不依赖 `GET /api/bookmarks` 的返回顺序。移动**只做整段重编号**（按新顺序把 position 写回 `1..n`），**永不交换 position 值**——历史数据的 position 是全局计数器留下的，可能带偏移和间隙，交换语义未定义且无法自愈。新建位置由 `useReorderBookmarks` 的 `nextPosition(parentId, type)` 统一计算，它返回**可直接写入数据库的 position**（组内 `max(position) + 1`，空分组为 1），调用方（弹窗的 `nextPosition` prop）**不得再 `+1`**——位置计算只发生一次；编辑保留原 position。历史数据无需预先迁移，删除或移动时会将目标分组整段归一化为 `1..n`
+- **排序模型**：分组键为 `(parentId, type)`，同组内 `sortBookmarks` 恒定「文件夹优先」→「position 升序」，因此 UI 中一段连续可视区间恰好等于一个分组。客户端排序是唯一权威（`leftTree` / `rightTree` 都经 `sortBookmarks`），不依赖 `GET /api/bookmarks` 的返回顺序。移动**只做整段重编号**（按新顺序把 position 写回 `1..n`），**永不交换 position 值**——历史数据的 position 是全局计数器留下的，可能带偏移和间隙，交换语义未定义且无法自愈。新建位置由服务端计算：`POST /api/bookmarks` 写入前取目标 `(parentId, type)` 分组的 `max(position) + 1`（空分组为 1），客户端不再计算或提交 `position`；编辑不改 `position`。历史数据无需预先迁移，删除或移动时会将目标分组整段归一化为 `1..n`
 - **重编号实现**：必须走 `server/utils/renumber.ts` 的 `renumberGroupQuery(parentId, type, orderedIds)`，它用 SQLite JSON1 的 `json_each` 把顺序当参数传入，**语句数恒为 1、绑定参数为常数个且最多 4 个，与分组大小 N 无关**。不要改回「每行一条 UPDATE」（随 N 线性增长，会撞 D1 每批语句数限制），也不要改成「单条 CASE」（要 2N 个绑定参数，会撞 D1 每查询 100 个绑定参数的限制）。**调用方必须传入该分组的完整成员**——服务端不做覆盖度校验，漏传的行不会被更新
 - **移动能力查询成本**：`useReorderBookmarks` 的 `located` computed 预先构造 `id → { item, group, index }` 映射，`locate` 只做 Map 查找。不要在 `canMove` / `locate` 内重排或扫描全量数据；以往扫描造成的约 16ms/次开销是优化此处的原因。
 - **移动的两条通道**：同父级内走 `PUT /api/bookmarks/reorder`（`useReorderBookmarks` 负责）；跨父级走 `PUT /api/bookmarks/move`，由 `MoveFormModal` 自己发请求（与 `BookmarkFormModal` / `FolderFormModal` 一致：弹窗发请求 + `emit`，页面在 `@moved` 上 `refresh`），所以 `useReorderBookmarks` 里没有跨父级的函数。

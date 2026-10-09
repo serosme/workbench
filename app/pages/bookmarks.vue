@@ -10,7 +10,6 @@ const { leftTree, rightTree, refresh, data } = useBookmarks()
 const { remove: removeBookmark } = useDeleteBookmark(refresh)
 const { remove: removeFolder } = useDeleteFolder(refresh)
 const reorder = useReorderBookmarks(data, refresh)
-const { nextPosition } = reorder
 const { getMenu: getBookmarkMenu } = useBookmarkMenu(bookmarkForm, moveForm, removeBookmark, reorder)
 const { getMenu: getFolderMenu } = useFolderMenu(bookmarkForm, folderForm, moveForm, removeFolder, reorder)
 
@@ -85,7 +84,6 @@ const contextRightTree = computed<TreeItem[]>(() => withContextTokens(rightTree.
       :mode="bookmarkForm.modal.mode"
       :parent-id="bookmarkForm.modal.parentId"
       :item="bookmarkForm.modal.item"
-      :next-position="nextPosition(bookmarkForm.modal.parentId ?? null, 'bookmark')"
       @created="refresh"
       @updated="refresh"
     />
@@ -94,7 +92,6 @@ const contextRightTree = computed<TreeItem[]>(() => withContextTokens(rightTree.
       :mode="folderForm.modal.mode"
       :parent-id="folderForm.modal.parentId"
       :item="folderForm.modal.item"
-      :next-position="nextPosition(folderForm.modal.parentId ?? null, 'folder')"
       @created="refresh"
       @updated="refresh"
     />

@@ -4,7 +4,6 @@ import type { FormError } from '@nuxt/ui'
 const props = defineProps<{
   open: boolean
   mode: 'create' | 'edit'
-  nextPosition?: number
   parentId?: number
   item?: Bookmark | null
 }>()
@@ -53,11 +52,10 @@ async function handleSubmit() {
   submitting.value = true
   try {
     if (props.mode === 'create') {
-      const body: InsertBookmark = {
+      const body: Pick<InsertBookmark, 'type' | 'name' | 'url' | 'parentId'> = {
         type: 'bookmark',
         name: formState.name,
         url: formState.url || undefined,
-        position: props.nextPosition ?? 1,
         parentId: props.parentId,
       }
 

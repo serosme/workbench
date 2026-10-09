@@ -39,11 +39,6 @@ export function useReorderBookmarks(
     return atStart ? found.index > 0 : found.index < found.group.length - 1
   }
 
-  function nextPosition(parentId: number | null, type: 'folder' | 'bookmark'): number {
-    const group = (data.value ?? []).filter(b => b.parentId === parentId && b.type === type)
-    return group.reduce((max, b) => Math.max(max, b.position), 0) + 1
-  }
-
   // 组内重排统一走 reorder：ids 必须是该 (parentId, type) 分组的完整成员顺序。
   async function reorder(item: Bookmark, ids: number[]) {
     moving.value = true
@@ -78,5 +73,5 @@ export function useReorderBookmarks(
   }
 
   // 跨父级移动不在这里：由 MoveFormModal 自己发 PUT /api/bookmarks/move，与其他表单弹窗一致（弹窗发请求 + emit，页面 refresh）。
-  return { moving, move, canMove, nextPosition }
+  return { moving, move, canMove }
 }
