@@ -44,6 +44,7 @@
 | `pnpm deploy`      | 部署到 Cloudflare Workers + D1 |
 
 - 包管理器为 `pnpm`（锁定在 pnpm-lock.yaml，workspace 配置在 pnpm-workspace.yaml）
+- `pnpm-workspace.yaml` 启用 `trustPolicy: no-downgrade`：Nuxt 4.6 的 `@nuxt/vite-builder` 依赖 `cssnano ^9.2.2`，而 cssnano 9 / postcss-* 家族换发布流程后只剩 provenance、没有 npm trusted-publisher 证据，会被该策略判为 trust downgrade 并中断安装，故在 `trustPolicyExclude` 里按包名（`cssnano*`、`postcss-*`、`stylehacks`、`css-declaration-sorter`）排除；以后升级这些包若再报 `ERR_PNPM_TRUST_DOWNGRADE`，按同样方式补排除项
 - `pnpm dev` 启动后支持 HMR，修改前端代码无需重新构建或重启
 - 本地 `AUTH_SECRET` 配置在 `.env`（已被 gitignore），模板见 `.env.example`
 - 无测试框架，无 CI 配置

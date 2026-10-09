@@ -1,8 +1,16 @@
 minimumReleaseAgeExcludePrune: true
+minimumReleaseAgeExclude:
+  - drizzle-orm@0.45.4
+  - miniflare@5.20261006.1-alpha
+  - wrangler@4.149.0
 
 trustPolicy: no-downgrade
 trustPolicyExclude:
   - semver@6.3.1
+  - 'cssnano*'
+  - 'postcss-*'
+  - stylehacks
+  - css-declaration-sorter
 
 shellEmulator: true
 
