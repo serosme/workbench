@@ -12,7 +12,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
  */
 export function renumberGroupQuery(
   parentId: number | null,
-  type: string,
+  type: 'folder' | 'bookmark',
   orderedIds: number[],
 ) {
   const idsJson = JSON.stringify(orderedIds)
