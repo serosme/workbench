@@ -5,9 +5,10 @@ const links = [
   { to: '/bookmarks', icon: 'i-lucide-bookmark', label: 'Bookmarks' },
   { to: '/files', icon: 'i-lucide-folder-tree', label: 'Files' },
   { to: '/notes', icon: 'i-lucide-notebook-pen', label: 'Notes' },
+  { to: '/expenses', icon: 'i-lucide-wallet', label: 'Expenses' },
 ]
 
-// 当前页不放自己的入口，只留另外两页
+// 当前页不放自己的入口，只留其他页
 const others = computed(() => links.filter(link => link.to !== route.path))
 </script>
 

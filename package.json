@@ -14,6 +14,7 @@
     "deploy": "cross-env NITRO_PRESET=cloudflare_module nuxt build && wrangler deploy --keep-vars && wrangler --config .output/server/wrangler.json d1 migrations apply DB --remote"
   },
   "dependencies": {
+    "@internationalized/date": "3.12.4",
     "@libsql/client": "0.18.0",
     "@nuxt/ui": "4.11.3",
     "@nuxthub/core": "0.10.8",

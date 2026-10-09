@@ -11,3 +11,9 @@ export type Note = typeof schema.notes.$inferSelect
 
 // Insert types (for creating data)
 export type InsertNote = typeof schema.notes.$inferInsert
+
+// Select types (for reading data)
+export type Expense = typeof schema.expenses.$inferSelect
+
+// Insert types (for creating data)
+export type InsertExpense = typeof schema.expenses.$inferInsert
