@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'))
   const body = await readBody<InsertBookmark>(event)
   if (body.parentId === id)
-    throw createError({ statusCode: 400, message: 'ParentId cannot be itself' })
+    throw createError({ status: 400, message: 'ParentId cannot be itself' })
   const data: InsertBookmark = {
     type: body.type,
     name: body.name,

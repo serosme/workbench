@@ -8,7 +8,7 @@ const MAX_SIZE = 64 * 1024 * 1024
 export default defineEventHandler(async (event) => {
   const path = String(getQuery(event).path ?? '')
   if (!path)
-    throw createError({ statusCode: 400, message: 'File path is required' })
+    throw createError({ status: 400, message: 'File path is required' })
 
   // 头值只能是 latin1：中文名直接塞进 filename= 会让 Node / Workers 的头校验抛错（ERR_INVALID_CHAR → 500），
   // 所以 ASCII 回退一份、再用 RFC 5987 的 filename* 带真正的名字
@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
 
   const { size } = await blob.head(path) // 文件不存在时 head 自己抛 404
   if (size && size > MAX_SIZE)
-    throw createError({ statusCode: 413, message: `File is too large to download (max ${MAX_SIZE / 1024 / 1024}MB)` })
+    throw createError({ status: 413, message: `File is too large to download (max ${MAX_SIZE / 1024 / 1024}MB)` })
 
   // serve 把内容读成 ArrayBuffer 后直接包成 ReadableStream 返回，不会被 h3 再复制一份（峰值约 1× 文件大小）
   return blob.serve(event, path)

@@ -5,11 +5,11 @@ export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'))
   const bookmark = await db.select().from(schema.bookmarks).where(eq(schema.bookmarks.id, id)).get()
   if (!bookmark)
-    throw createError({ statusCode: 400, message: 'Not found' })
+    throw createError({ status: 400, message: 'Not found' })
   if (bookmark.type === 'folder') {
     const children = await db.select().from(schema.bookmarks).where(eq(schema.bookmarks.parentId, id)).all()
     if (children.length > 0)
-      throw createError({ statusCode: 400, message: 'Folder is not empty' })
+      throw createError({ status: 400, message: 'Folder is not empty' })
   }
 
   // 删除后把同组剩余项按当前顺序整段重编号为 1..n，维持「组内 position 连续」不变式，

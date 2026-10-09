@@ -24,16 +24,16 @@ function hasAncestor(list: Bookmark[], candidate: number, ancestorId: number): b
 export default defineEventHandler(async (event) => {
   const { id, parentId } = await readBody<MoveBody>(event)
   if (parentId === id)
-    throw createError({ statusCode: 400, message: 'ParentId cannot be itself' })
+    throw createError({ status: 400, message: 'ParentId cannot be itself' })
 
   const all = await db.select().from(schema.bookmarks).all()
   const moving = all.find(b => b.id === id)
   if (!moving)
-    throw createError({ statusCode: 400, message: 'Not found' })
+    throw createError({ status: 400, message: 'Not found' })
   // 文件夹移进自己的子孙会成环：buildTree 里这些行都成不了 root，整棵子树会从界面消失，
   // 且界面上再也点不到它们，只能改库才能恢复。
   if (moving.type === 'folder' && parentId !== null && hasAncestor(all, parentId, id))
-    throw createError({ statusCode: 400, message: 'Cannot move a folder into its own descendant' })
+    throw createError({ status: 400, message: 'Cannot move a folder into its own descendant' })
 
   // 分组内除被移动项以外的成员顺序（历史 position 可以有偏移与间隙，这里只比较大小）。
   const groupIds = (owner: number | null) => all

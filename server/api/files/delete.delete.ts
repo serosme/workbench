@@ -5,7 +5,7 @@ import { listBlobs } from '../../utils/blob-files'
 export default defineEventHandler(async (event) => {
   const path = String(getQuery(event).path ?? '')
   if (!path)
-    throw createError({ statusCode: 400, message: 'File path is required' })
+    throw createError({ status: 400, message: 'File path is required' })
 
   await blob.del(path.endsWith('/') ? (await listBlobs(path)).map(item => item.pathname) : path)
 })
