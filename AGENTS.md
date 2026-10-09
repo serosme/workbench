@@ -4,11 +4,11 @@
 
 技术栈：Nuxt 4、Nuxt UI v4、Nuxt Hub、Drizzle ORM + SQLite/Cloudflare D1、Tailwind CSS v4、TypeScript 6。个人自用、单用户、单浏览器。
 
-- 纯客户端渲染（`nuxt.config.ts` 设 `ssr: false`）：不写 SSR 分支（`import.meta.server`），也不要指望服务端取数；`selfFetch` 的 401 跳转直接用 `window.location`。
+- 纯客户端渲染（`nuxt.config.ts` 设 `ssr: false`）：不写 SSR 分支（`import.meta.server`），也不要指望服务端取数；`selfFetch` 的 401 跳转直接用 `window.location`。客户端渲染仍会由服务端渲染 app shell，所以页面请求走 Nuxt 渲染器——`nuxt.config.ts` 里的 `nitro.externals.inline` 是 Nuxt 4.6.0 的 Windows 回归（nuxt#36467）workaround：不加它，Windows 上所有页面请求 500（`Either manifest or precomputed data must be provided`）；官方修好后可移除。
 
 ## 功能
 
-- **F1 登录**：单用户密码；密码与 JWT 密钥同为环境变量 `AUTH_SECRET`，成功写 httpOnly cookie；除 `/api/auth/login` 外所有 API 由 `server/middleware/auth.ts` 校验 token。
+- **F1 登录**：单用户密码（环境变量 `NUXT_AUTH_PASSWORD`，即 `runtimeConfig.authPassword`）；校验通过后用 Nuxt 4.6 的 `useSession`（`nuxt/server`）写入 `nuxt-session` cookie（默认 httpOnly/secure/sameSite=lax，maxAge 1 天），密封用 Nuxt 的应用密钥 `NUXT_APP_SECRET`（≥32 字符，session 内部经 `deriveSecret` 读取）；除 `/api/auth/` 外所有 API 由 `server/middleware/auth.ts` 用 `getSession` 校验。
 - **F2 书签数据**：一次拉全量，`sortBookmarks` 排序后 `buildTree` 组树——左树为所有文件夹及其子书签，右树为根级书签。
 - **F3 双栏与节点菜单**：节点右键打开操作菜单，节点链接隐藏默认尾随箭头；左右面板及右键区域铺满视口高度，面板空白处右键新建（左：文件夹/书签，右：书签），无底部新建虚拟项。
 - **F4 新建/编辑**：书签、文件夹各一个 create/edit 双模式弹窗；新建位置由 `nextPosition(parentId, type)` 给出，提交带 `submitting` 守卫防重复提交。
@@ -26,7 +26,7 @@
 - `app/components/`：`FileTree`、`FileUploadModal`、`BookmarkFormModal`、`FolderFormModal`、`MoveFormModal`、`NoteFormModal`、`ExpenseFormModal`、`PageNav`、`LoginForm`。
 - `app/composables/`：数据 `useBookmarks` / `useFiles` / `useNotes` / `useExpenses`，弹窗状态 `*Form`，删除 `useDelete*`，排序 `useReorderBookmarks`，右键菜单 `*Menu`，各自独立、互不混合。
 - `app/utils/`：`selfFetch` / `useSelfFetch`（请求与错误）、`bookmark-tree`（排序/组树）、`bookmark-menu`（书签与文件夹共用的 Move 子菜单）、`money`（分与元的换算）、`datetime`（日期/月份显示格式、「YYYY-MM-DD」↔ 当天零点毫秒时间戳的互转）。
-- `server/`：`api/{auth,bookmarks,files,notes,expenses}`、`utils/{jwt,renumber,blob-files,blob-tree}`、`db/schema.ts` 与 `db/migrations/sqlite/`。
+- `server/`：`api/{auth,bookmarks,files,notes,expenses}`、`utils/{renumber,blob-files,blob-tree}`、`db/schema.ts` 与 `db/migrations/sqlite/`。
 - `shared/types/`：前后端共享类型（`db.ts`、`files.ts`）。
 
 ## 命令
@@ -46,7 +46,7 @@
 - 包管理器为 `pnpm`（锁定在 pnpm-lock.yaml，workspace 配置在 pnpm-workspace.yaml）
 - `pnpm-workspace.yaml` 启用 `trustPolicy: no-downgrade`：Nuxt 4.6 的 `@nuxt/vite-builder` 依赖 `cssnano ^9.2.2`，而 cssnano 9 / postcss-* 家族换发布流程后只剩 provenance、没有 npm trusted-publisher 证据，会被该策略判为 trust downgrade 并中断安装，故在 `trustPolicyExclude` 里按包名（`cssnano*`、`postcss-*`、`stylehacks`、`css-declaration-sorter`）排除；以后升级这些包若再报 `ERR_PNPM_TRUST_DOWNGRADE`，按同样方式补排除项
 - `pnpm dev` 启动后支持 HMR，修改前端代码无需重新构建或重启
-- 本地 `AUTH_SECRET` 配置在 `.env`（已被 gitignore），模板见 `.env.example`
+- 本地密钥配置在 `.env`（已被 gitignore，模板见 `.env.example`）：`NUXT_AUTH_PASSWORD`（登录密码）与 `NUXT_APP_SECRET`（≥32 字符随机串，Nuxt 应用密钥，用于密封 session）
 - 无测试框架，无 CI 配置
 
 ## API 要点
@@ -148,7 +148,6 @@
 - **节点菜单的 Move 是共用的二级菜单**：`app/utils/bookmark-menu.ts` 的 `moveMenuItem(bookmark, reorder, moveForm)` 返回一个带 `children` 的子菜单项，同时给书签菜单和文件夹菜单用（各写一份会随项数增加越来越难同步）；`menuBookmark(item)` 是共用的取值器（树节点把原始记录挂在 `_bookmark` 上）。一级菜单因此只有 4~5 项。整个 Move 在请求在途时 disabled，子项各自的 `canMove` 判定照旧。
 - **跨父级移动的目标候选**：页面用 `buildFolderTree(data, item)` 算出文件夹树（只含文件夹、按层级嵌套、同级按 position），注入 `MoveFormModal`；「根级」是弹窗自己补在最前面的虚拟节点（`value: null`）。传进去的是即将被移动的那条记录，util 内部只剪掉**它自己**：子孙只在从被保留的节点往下递归时才被访问，所以天然进不来——不剪则会成环，`buildTree` 里成环的行都成不了 root，整棵子树从界面消失且再也点不到；服务端在 `move.put.ts` 里也会再拒一次。
 - **错误处理（fail loudly）**：`selfFetch` 已在全局统一弹出错误 toast，业务代码**不写 try/catch 包裹请求**；失败时异常自然传播（unhandled rejection 即预期表现），成功路径（emit/refresh/toast）不执行
-- **例外**：`server/utils/jwt.ts` 的 `verifyToken` 用 try/catch 将校验失败转为布尔值（预期输入判断，非意外错误）
 
 ## Nuxt UI
 
@@ -181,7 +180,7 @@
 - 部署命令 `pnpm deploy` 通过 `cross-env` 跨平台设置 `NITRO_PRESET=cloudflare_module`，然后执行：构建 Nitro preset `cloudflare_module` → `wrangler deploy --keep-vars` → 应用 D1 迁移（`wrangler --config .output/server/wrangler.json d1 migrations apply DB --remote`）
 - `wrangler deploy` 从根目录运行，经构建生成且已被 gitignore 的 `.wrangler/deploy/config.json` 重定向到 `.output/server/wrangler.json`；迁移命令需显式 `--config .output/server/wrangler.json`（`migrations_dir` 为相对该文件的 `db/migrations/sqlite/`）
 - 部署前提：wrangler 已认证（`wrangler login`，或设置 `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` 环境变量）
-- `AUTH_SECRET` 需一次性执行 `wrangler secret put AUTH_SECRET` 设置生产密码（与本地 `.env` 中的值独立，`--keep-vars` 不会覆盖 secrets）
+- 生产密钥：`wrangler secret put NUXT_AUTH_PASSWORD`（登录密码）与 `wrangler secret put NUXT_APP_SECRET`（≥32 字符随机串，可用 `openssl rand -base64 32` 生成）；两者与本地 `.env` 的值独立，`--keep-vars` 不会覆盖 secrets。旧的 `AUTH_SECRET` 可 `wrangler secret delete AUTH_SECRET` 删除
 - `pnpm backup` 导出远程 D1 到 `db.sql`（已被 gitignore），经 binding `DB` 从根 `wrangler.jsonc` 解析库名，不依赖构建产物
 
 ## 约束
