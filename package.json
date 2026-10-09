@@ -1,5 +1,5 @@
 {
-  "name": "homepage",
+  "name": "workbench",
   "type": "module",
   "private": true,
   "scripts": {

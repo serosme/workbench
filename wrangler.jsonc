@@ -3,13 +3,13 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "homepage-db"
+      "database_name": "workbench-db"
     }
   ],
   "r2_buckets": [
     {
       "binding": "BLOB",
-      "bucket_name": "homepage-files"
+      "bucket_name": "workbench-r2"
     }
   ],
   "observability": {

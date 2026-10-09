@@ -1,4 +1,4 @@
-# Homepage Agent Instructions
+# Workbench Agent Instructions
 
 个人自用的 Nuxt 4 书签、文件、笔记与记账应用：单用户密码登录，书签页为左右双树，文件页为文件树 + 预留预览区，笔记页为瀑布流卡片，记账页为按天分组的流水列表；书签节点及空白区域、文件树节点及空白区域、笔记卡片及空白区域、记账行及空白区域均通过右键打开上下文菜单。
 
@@ -174,7 +174,7 @@
 
 - 使用 Cloudflare Workers + D1 部署
 - D1 绑定在 `wrangler.jsonc` 中声明，构建时 nitro 合并到 `.output/server/wrangler.json`
-- R2 bucket 也要先建：`wrangler r2 bucket create homepage-files`（`wrangler.jsonc` 的 `r2_buckets` 按名绑定到 `BLOB`，bucket 不存在时部署会报绑定解析失败）；它是生产环境的文件存储，本地 `.data/blob` 不会同步过去
+- R2 bucket 也要先建：`wrangler r2 bucket create workbench-r2`（`wrangler.jsonc` 的 `r2_buckets` 按名绑定到 `BLOB`，bucket 不存在时部署会报绑定解析失败）；它是生产环境的文件存储，本地 `.data/blob` 不会同步过去
 - 部署命令 `pnpm deploy` 通过 `cross-env` 跨平台设置 `NITRO_PRESET=cloudflare_module`，然后执行：构建 Nitro preset `cloudflare_module` → `wrangler deploy --keep-vars` → 应用 D1 迁移（`wrangler --config .output/server/wrangler.json d1 migrations apply DB --remote`）
 - `wrangler deploy` 从根目录运行，经构建生成且已被 gitignore 的 `.wrangler/deploy/config.json` 重定向到 `.output/server/wrangler.json`；迁移命令需显式 `--config .output/server/wrangler.json`（`migrations_dir` 为相对该文件的 `db/migrations/sqlite/`）
 - 部署前提：wrangler 已认证（`wrangler login`，或设置 `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` 环境变量）

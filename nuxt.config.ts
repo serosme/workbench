@@ -16,7 +16,7 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      title: 'Home',
+      title: 'Workbench',
     },
   },
   icon: {
