@@ -174,6 +174,7 @@
 
 - 使用 Cloudflare Workers + D1 部署
 - worker 名由 `wrangler.jsonc` 的 `name` 决定（现为 `workbench`）
+- `wrangler.jsonc` 设 `workers_dev: false`、`preview_urls: false`，不对外暴露 `*.workers.dev` 地址（因此需要自定义域名 / route 才能访问）
 - D1 绑定在 `wrangler.jsonc` 中声明，构建时 nitro 合并到 `.output/server/wrangler.json`
 - R2 bucket 也要先建：`wrangler r2 bucket create workbench-r2`（`wrangler.jsonc` 的 `r2_buckets` 按名绑定到 `BLOB`，bucket 不存在时部署会报绑定解析失败）；它是生产环境的文件存储，本地 `.data/blob` 不会同步过去
 - 部署命令 `pnpm deploy` 通过 `cross-env` 跨平台设置 `NITRO_PRESET=cloudflare_module`，然后执行：构建 Nitro preset `cloudflare_module` → `wrangler deploy --keep-vars` → 应用 D1 迁移（`wrangler --config .output/server/wrangler.json d1 migrations apply DB --remote`）
