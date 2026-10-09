@@ -58,6 +58,7 @@
 - `PUT /api/bookmarks/move`：`db.batch()` 里「源分组重编号 → 更新 parentId → 目标分组重编号」原子完成，目标分组写最后（所以同父级移动也正确）；400 拒绝 parentId 等于自身、id 不存在、把文件夹移进自己的子孙。
 - `DELETE /api/bookmarks/:id`：删除与同组剩余项重编号在同一个 `db.batch()` 里原子完成。
 - `PUT /api/bookmarks/reorder`：不校验 ids 覆盖度，由调用方保证传完整分组（见「重编号实现」）。
+- `PUT /api/bookmarks/:id`：只更新 `name` / `url`；`type` / `parentId` / `position` 是结构性字段，分别由创建、`move`、`reorder` 维护，编辑接口不动它们。
 - `PUT /api/notes/:id` 只改 content、`createdAt` 不动；`DELETE /api/notes/:id` 不做存在性预检（删 0 行，幂等）。
 - `expenses` 的 CRUD 与 notes 同形；`GET /api/expenses` 按 `spentAt DESC, id DESC` 返回，`PUT /api/expenses/:id` 三个字段都可改（补记/改时间）。
 

@@ -70,17 +70,10 @@ async function handleSubmit() {
       emit('update:open', false)
     }
     else {
-      const body: InsertBookmark = {
-        type: 'bookmark',
-        name: formState.name,
-        url: formState.url || null,
-        position: props.item?.position ?? props.nextPosition ?? 1,
-        parentId: props.item?.parentId ?? null,
-      }
-
       await selfFetch(`/api/bookmarks/${props.item!.id}`, {
         method: 'PUT',
-        body,
+        // 编辑只提交可改字段：type / parentId / position 由服务端保持不变
+        body: { name: formState.name, url: formState.url || null },
       })
 
       emit('updated')
