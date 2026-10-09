@@ -1,5 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "workbench",
   "d1_databases": [
     {
       "binding": "DB",
