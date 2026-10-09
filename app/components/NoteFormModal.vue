@@ -61,14 +61,13 @@ async function handleSubmit() {
           :rows="20"
           :ui="{ base: 'resize-none' }"
           autofocus
-          :disabled="submitting"
           placeholder="Write something…"
         />
       </UForm>
     </template>
     <template #footer>
       <div class="flex justify-end gap-2 w-full">
-        <UButton :disabled="!formState.content.trim()" :loading="submitting" @click="formRef?.submit()">
+        <UButton :disabled="!formState.content.trim()" @click="formRef?.submit()">
           Save
         </UButton>
       </div>

@@ -95,7 +95,7 @@ async function handleSubmit() {
     </template>
     <template #footer>
       <div class="flex justify-end gap-2 w-full">
-        <UButton :loading="submitting" @click="formRef?.submit()">
+        <UButton @click="formRef?.submit()">
           {{ mode === 'create' ? 'Create' : 'Save' }}
         </UButton>
       </div>

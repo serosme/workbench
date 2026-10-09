@@ -66,7 +66,6 @@ async function handleSubmit() {
               variant="outline"
               label="Choose File"
               class="cursor-pointer"
-              :disabled="submitting"
               @click="fileInput?.click()"
             />
             <span class="truncate text-sm text-muted">
@@ -76,7 +75,7 @@ async function handleSubmit() {
           <input ref="fileInput" type="file" class="hidden" @change="pickFile">
         </UFormField>
         <UFormField label="Path">
-          <UInput v-model="path" class="w-full" :disabled="submitting" placeholder="Leave empty for root" />
+          <UInput v-model="path" class="w-full" placeholder="Leave empty for root" />
         </UFormField>
         <UFormField label="Full Path">
           <UInput :model-value="target" class="w-full" readonly />
@@ -93,7 +92,7 @@ async function handleSubmit() {
     </template>
     <template #footer>
       <div class="flex justify-end gap-2 w-full">
-        <UButton :disabled="!file" :loading="submitting" @click="formRef?.submit()">
+        <UButton :disabled="!file" @click="formRef?.submit()">
           Upload
         </UButton>
       </div>

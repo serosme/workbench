@@ -100,14 +100,14 @@ async function handleSubmit() {
       <UForm ref="formRef" :state="formState" class="space-y-4" @submit="handleSubmit">
         <UFormField label="Move to" name="target" help="Placed last in the folder">
           <div class="w-full max-h-96 overflow-y-auto rounded-md border border-default p-1">
-            <UTree :items="items" :get-key="getKey" :model-value="selected" :disabled="submitting" :ui="treeLinkUi" />
+            <UTree :items="items" :get-key="getKey" :model-value="selected" :ui="treeLinkUi" />
           </div>
         </UFormField>
       </UForm>
     </template>
     <template #footer>
       <div class="flex justify-end gap-2 w-full">
-        <UButton :loading="submitting" @click="formRef?.submit()">
+        <UButton @click="formRef?.submit()">
           Move
         </UButton>
       </div>
