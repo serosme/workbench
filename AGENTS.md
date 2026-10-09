@@ -60,6 +60,7 @@
 - `PUT /api/bookmarks/reorder`：不校验 ids 覆盖度，由调用方保证传完整分组（见「重编号实现」）。
 - `PUT /api/bookmarks/:id`：只更新 `name` / `url`；`type` / `parentId` / `position` 是结构性字段，分别由创建、`move`、`reorder` 维护，编辑接口不动它们。
 - `POST /api/bookmarks`：`position` 由服务端按目标 `(parentId, type)` 分组计算（`max(position) + 1`，空分组为 1），客户端不提交 `position`。
+- `GET /api/bookmarks`：按 `(parentId, type, position)` 返回，顺序自洽；客户端仍以 `sortBookmarks` 为准，不依赖该顺序。
 - `PUT /api/notes/:id` 只改 content、`createdAt` 不动；`DELETE /api/notes/:id` 不做存在性预检（删 0 行，幂等）。
 - `expenses` 的 CRUD 与 notes 同形；`GET /api/expenses` 按 `spentAt DESC, id DESC` 返回，`PUT /api/expenses/:id` 三个字段都可改（补记/改时间）。
 
