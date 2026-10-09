@@ -1,14 +1,14 @@
 <script setup lang="ts">
 const props = defineProps<{
-  open: boolean
   defaultPath: string
   upload: (key: string, file: File, onProgress?: (percent: number) => void) => Promise<void>
 }>()
 
 const emit = defineEmits<{
-  'update:open': [value: boolean]
-  'saved': []
+  saved: []
 }>()
+
+const open = defineModel<boolean>('open', { required: true })
 
 const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
 const file = ref<File>()
@@ -17,8 +17,8 @@ const progress = ref(0)
 const submitting = ref(false)
 const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')
 
-watch(() => props.open, (open) => {
-  if (open) {
+watch(open, (isOpen) => {
+  if (isOpen) {
     path.value = props.defaultPath
     file.value = undefined
     progress.value = 0
@@ -46,7 +46,7 @@ async function handleSubmit() {
       progress.value = Math.round(percent)
     })
     emit('saved')
-    emit('update:open', false)
+    open.value = false
   }
   finally {
     submitting.value = false
@@ -55,7 +55,7 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <UModal :open="open" title="Upload File" @update:open="emit('update:open', $event)">
+  <UModal v-model:open="open" title="Upload File">
     <template #body>
       <UForm ref="formRef" :state="{ target }" class="space-y-4" @submit="handleSubmit">
         <UFormField label="File" required>

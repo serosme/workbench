@@ -2,17 +2,17 @@
 import type { FormError } from '@nuxt/ui'
 
 const props = defineProps<{
-  open: boolean
   mode: 'create' | 'edit'
   parentId?: number
   item?: Bookmark | null
 }>()
 
 const emit = defineEmits<{
-  'update:open': [value: boolean]
-  'created': []
-  'updated': []
+  created: []
+  updated: []
 }>()
+
+const open = defineModel<boolean>('open', { required: true })
 
 const title = computed(() => props.mode === 'create' ? 'New Folder' : 'Edit Folder')
 
@@ -23,8 +23,8 @@ const formState = reactive({
 const submitting = ref(false)
 const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')
 
-watch(() => props.open, (open) => {
-  if (open) {
+watch(open, (isOpen) => {
+  if (isOpen) {
     if (props.mode === 'edit' && props.item)
       formState.name = props.item.name
     else
@@ -57,7 +57,7 @@ async function handleSubmit() {
       })
 
       emit('created')
-      emit('update:open', false)
+      open.value = false
     }
     else {
       await selfFetch(`/api/bookmarks/${props.item!.id}`, {
@@ -67,7 +67,7 @@ async function handleSubmit() {
       })
 
       emit('updated')
-      emit('update:open', false)
+      open.value = false
     }
   }
   finally {
@@ -77,7 +77,7 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <UModal :open="open" :title="title" @update:open="emit('update:open', $event)">
+  <UModal v-model:open="open" :title="title">
     <template #body>
       <UForm ref="formRef" :state="formState" class="space-y-4" :validate="validate" @submit="handleSubmit">
         <UFormField label="Name" name="name" required>

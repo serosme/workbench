@@ -3,15 +3,15 @@ import type { TreeItem } from '@nuxt/ui'
 import type { FolderNode } from '~/utils/bookmark-tree'
 
 const props = defineProps<{
-  open: boolean
   item?: Bookmark | null
   targets: FolderNode[]
 }>()
 
 const emit = defineEmits<{
-  'update:open': [value: boolean]
-  'moved': []
+  moved: []
 }>()
+
+const open = defineModel<boolean>('open', { required: true })
 
 const title = computed(() => props.item?.type === 'folder' ? 'Move Folder' : 'Move Bookmark')
 
@@ -70,8 +70,8 @@ function getKey(item: TreeItem) {
 }
 
 // 默认选中它当前所在的父级。
-watch(() => props.open, (open) => {
-  if (open)
+watch(open, (isOpen) => {
+  if (isOpen)
     formState.target = props.item?.parentId ?? null
 })
 
@@ -86,7 +86,7 @@ async function handleSubmit() {
     })
 
     emit('moved')
-    emit('update:open', false)
+    open.value = false
   }
   finally {
     submitting.value = false
@@ -95,7 +95,7 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <UModal :open="open" :title="title" :description="item?.name" :ui="{ content: 'max-w-2xl' }" @update:open="emit('update:open', $event)">
+  <UModal v-model:open="open" :title="title" :description="item?.name" :ui="{ content: 'max-w-2xl' }">
     <template #body>
       <UForm ref="formRef" :state="formState" class="space-y-4" @submit="handleSubmit">
         <UFormField label="Move to" name="target" help="Placed last in the folder">

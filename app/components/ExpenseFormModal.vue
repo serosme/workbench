@@ -5,14 +5,14 @@ import type { ComponentPublicInstance } from 'vue'
 import { parseDate } from '@internationalized/date'
 
 const props = defineProps<{
-  open: boolean
   item?: Expense | null
 }>()
 
 const emit = defineEmits<{
-  'update:open': [value: boolean]
-  'saved': []
+  saved: []
 }>()
+
+const open = defineModel<boolean>('open', { required: true })
 
 // item 为空就是新增、有值就是编辑，不需要额外的 mode
 const isEdit = computed(() => !!props.item)
@@ -48,8 +48,8 @@ const inputDate = useTemplateRef<{ inputsRef: ComponentPublicInstance[] }>('inpu
 const submitting = ref(false)
 const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')
 
-watch(() => props.open, (open) => {
-  if (open) {
+watch(open, (isOpen) => {
+  if (isOpen) {
     formState.item = props.item?.item ?? ''
     formState.amount = props.item ? formatAmount(props.item.amount) : ''
     formState.spentAt = toDateKey(props.item?.spentAt ?? Date.now())
@@ -85,7 +85,7 @@ async function handleSubmit() {
       await selfFetch('/api/expenses', { method: 'POST', body })
     }
     emit('saved')
-    emit('update:open', false)
+    open.value = false
   }
   finally {
     submitting.value = false
@@ -95,9 +95,8 @@ async function handleSubmit() {
 
 <template>
   <UModal
-    :open="open"
+    v-model:open="open"
     :title="title"
-    @update:open="emit('update:open', $event)"
   >
     <template #body>
       <UForm ref="formRef" :state="formState" class="space-y-4" :validate="validate" @submit="handleSubmit">
