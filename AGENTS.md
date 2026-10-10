@@ -4,7 +4,7 @@
 
 技术栈：Nuxt 4、Nuxt UI v4、Nuxt Hub、Drizzle ORM + SQLite/Cloudflare D1、Tailwind CSS v4、TypeScript 6。个人自用、单用户、单浏览器。
 
-- 纯客户端渲染（`nuxt.config.ts` 设 `ssr: false`）：不写 SSR 分支（`import.meta.server`），也不要指望服务端取数；`selfFetch` 的 401 跳转直接用 `window.location`。客户端渲染仍会由服务端渲染 app shell，所以页面请求走 Nuxt 渲染器——`nuxt.config.ts` 里的 `nitro.externals.inline` 是 Nuxt 4.6.0 的 Windows 回归（nuxt#36467）workaround：不加它，Windows 上所有页面请求 500（`Either manifest or precomputed data must be provided`）；官方修好后可移除。
+- 纯客户端渲染（`nuxt.config.ts` 设 `ssr: false`）：不写 SSR 分支（`import.meta.server`），也不要指望服务端取数；`selfFetch` 的 401 跳转直接用 `window.location`。客户端渲染仍会由服务端渲染 app shell，所以页面请求走 Nuxt 渲染器。
 
 ## 功能
 
