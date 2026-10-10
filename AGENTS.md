@@ -1,8 +1,8 @@
 # Workbench Agent Instructions
 
-个人自用的 Nuxt 4 书签、文件、笔记与记账应用：单用户密码登录，书签页为书签树 + 预留 Chat 区，文件页为文件树 + 预留预览区，笔记页为单列笔记卡片列表，记账页为按天分组的流水列表；书签节点及空白区域、文件树节点及空白区域、笔记卡片及空白区域、记账行及空白区域均通过右键打开上下文菜单。
+个人自用的 Nuxt 4 书签、文件、笔记与记账应用：单用户密码登录，书签页为书签树 + Chat 面板，文件页为文件树 + 预留预览区，笔记页为单列笔记卡片列表，记账页为按天分组的流水列表；书签节点及空白区域、文件树节点及空白区域、笔记卡片及空白区域、记账行及空白区域均通过右键打开上下文菜单。
 
-技术栈：Nuxt 4、Nuxt UI v4、Nuxt Hub、Drizzle ORM + SQLite/Cloudflare D1、Tailwind CSS v4、TypeScript 6。个人自用、单用户、单浏览器。
+技术栈：Nuxt 4、Nuxt UI v4、Nuxt Hub、Drizzle ORM + SQLite/Cloudflare D1、Tailwind CSS v4、TypeScript 6、AI SDK（`ai` / `@ai-sdk/*` / `@comark/nuxt`）。个人自用、单用户、单浏览器。
 
 - 纯客户端渲染（`nuxt.config.ts` 设 `ssr: false`）：不写 SSR 分支（`import.meta.server`），也不要指望服务端取数；`selfFetch` 的 401 跳转直接用 `window.location`。客户端渲染仍会由服务端渲染 app shell，所以页面请求走 Nuxt 渲染器。
 
@@ -19,7 +19,7 @@
 - **F9 数据库**：见「数据库」；**F10 部署/备份**：见「部署」；**F11 文件**：见「文件存储」；**F12 工程配置与技能**：见「命令」「约束」「项目技能」。
 - **F13 笔记**：每条笔记含标题（`title`）、正文（`content`）与书写日期（`writtenAt`，表单默认今天、可改）；`/notes` 是居中单列的卡片列表（四周留白由默认布局给），按书写日期倒序分组——每天一张 `UCard`（header 是日期、body 是当天笔记，行只显示标题），组顺序与组内顺序都来自服务端；空白处右键新建（无独立按钮），行左键进编辑、右键编辑/删除（无只读详情弹窗），删除不弹确认框；卡片样式见「Nuxt UI」。
 - **F14 记账**：`/expenses` 是仅含「消费日期 / 金额 / 消费内容」三项的流水列表，按 `spentAt` 倒序，先按月分段（每月一张 `UCard` 显示该月合计），月内再按本地日期分成多张 `UCard`（header 显示日期与小计，body 是当天流水行）；消费只精确到天，表单用 `DatePicker` 选日期（存当天本地零点的毫秒时间戳）；金额以整数「分」存储（`amount`），界面出入都经 `formatAmount` / `parseAmount` 换算，不做元的浮点运算；空白处右键新建，行左键进编辑、右键编辑/删除，删除不弹确认框；滚动区 `h-full overflow-y-auto` 并用 Tailwind 内置的 `scrollbar-none` 隐藏滚动条，外层留白由默认布局给）。
-- **F15 Chat**：书签页右栏是 `ChatPanel`（`useChat`（`@ai-sdk/vue`）+ `DefaultChatTransport`（`ai`）驱动 `POST /api/chat` 流式）。可选模型不向 provider 拉取，由环境变量 `NUXT_PUBLIC_CHAT_MODELS`（`{ label, value }` 的 JSON 数组）配置（即 `runtimeConfig.public.chatModels`，`nuxt.config.ts` 里只留空数组占位；示例见 `.env.example`）。`POST /api/chat` 用 `@ai-sdk/openai-compatible` 的 `streamText`，带 `getTime` 工具（`server/utils/ai-tools/`）和 `smoothStream`（`Intl.Segmenter('zh')` 按词平滑）；assistant 文本用 `@comark/nuxt` 的 `<Markdown>` 渲染（用户文本仍为纯文本）。provider 走 `runtimeConfig.chatBaseUrl` / `chatApiKey`（env `NUXT_CHAT_BASE_URL` / `NUXT_CHAT_API_KEY`，nuxt.config 不留默认值）。没有消息时右栏显示 `ChatPlaceholder`（打字机输出的假「思考」+「服务器繁忙，请稍后重试。」），有真实消息后切换为真实对话。移植注意事项集中在根目录 `CHAT-PORT-NOTES.md`。
+- **F15 Chat**：书签页右栏是 `ChatPanel`（`useChat`（`@ai-sdk/vue`）+ `DefaultChatTransport`（`ai`）驱动 `POST /api/chat` 流式）。可选模型不向 provider 拉取，由环境变量 `NUXT_PUBLIC_CHAT_MODELS`（`{ label, value }` 的 JSON 数组）配置（即 `runtimeConfig.public.chatModels`，`nuxt.config.ts` 里只留空数组占位；示例见 `.env.example`）。`POST /api/chat` 用 `@ai-sdk/openai-compatible` 的 `streamText`，带 `getTime` 工具（`server/utils/ai-tools/`）和 `smoothStream`（`Intl.Segmenter('zh')` 按词平滑）；assistant 文本用 `@comark/nuxt` 的 `<Markdown>` 渲染（用户文本仍为纯文本）。provider 走 `runtimeConfig.chatBaseUrl` / `chatApiKey`（env `NUXT_CHAT_BASE_URL` / `NUXT_CHAT_API_KEY`，nuxt.config 不留默认值）。没有消息时右栏显示 `ChatPlaceholder`（打字机输出的假「思考」+「服务器繁忙，请稍后重试。」），有真实消息后切换为真实对话。
 
 ## 目录职责
 
@@ -46,9 +46,9 @@
 | `pnpm deploy`      | 部署到 Cloudflare Workers + D1 |
 
 - 包管理器为 `pnpm`（锁定在 pnpm-lock.yaml，workspace 配置在 pnpm-workspace.yaml）
-- `pnpm-workspace.yaml` 启用 `trustPolicy: no-downgrade`：Nuxt 4.6 的 `@nuxt/vite-builder` 依赖 `cssnano ^9.2.2`，而 cssnano 9 / postcss-* 家族换发布流程后只剩 provenance、没有 npm trusted-publisher 证据，会被该策略判为 trust downgrade 并中断安装，故在 `trustPolicyExclude` 里按包名（`cssnano*`、`postcss-*`、`stylehacks`、`css-declaration-sorter`）排除；以后升级这些包若再报 `ERR_PNPM_TRUST_DOWNGRADE`，按同样方式补排除项
+- `pnpm-workspace.yaml` 启用 `trustPolicy: no-downgrade`：Nuxt 的 `@nuxt/vite-builder` 依赖 `cssnano ^9`，而 cssnano 9 / postcss-* 家族换发布流程后只剩 provenance、没有 npm trusted-publisher 证据，会被该策略判为 trust downgrade 并中断安装，故在 `trustPolicyExclude` 里按包名（`cssnano*`、`postcss-*`、`stylehacks`、`css-declaration-sorter`）排除；以后升级这些包若再报 `ERR_PNPM_TRUST_DOWNGRADE`，按同样方式补排除项
 - `pnpm dev` 启动后支持 HMR，修改前端代码无需重新构建或重启；脚本带 `--no-tui`，关掉 Nuxt 4.6（`@nuxt/cli` 4.x）的 `dev` 默认交互式 TUI，改用普通流式日志（临时想看 TUI 可直接跑 `nuxt dev`）
-- 本地密钥配置在 `.env`（已被 gitignore，模板见 `.env.example`）：`NUXT_AUTH_PASSWORD`（登录密码）与 `NUXT_APP_SECRET`（≥32 字符随机串，Nuxt 应用密钥，用于密封 session）
+- 本地密钥配置在 `.env`（已被 gitignore，模板见 `.env.example`）：`NUXT_AUTH_PASSWORD`（登录密码）、`NUXT_APP_SECRET`（≥32 字符随机串，Nuxt 应用密钥，用于密封 session）；Chat 另有 `NUXT_CHAT_BASE_URL`、`NUXT_CHAT_API_KEY`、`NUXT_PUBLIC_CHAT_MODELS`（见 F15）
 - 无测试框架，无 CI 配置
 
 ## API 要点
@@ -66,6 +66,7 @@
 - `POST` / `PUT /api/notes` 的 `writtenAt` 由客户端提交（表单默认今天，`dateKeyToMs` 存当天本地零点的毫秒时间戳），服务端不再写 `Date.now()`。
 - `PUT /api/notes/:id` 三个字段（title/content/writtenAt）都可改（补记、改书写日期）；`DELETE /api/notes/:id` 不做存在性预检（删 0 行，幂等）。
 - `expenses` 的 CRUD 与 notes 同形；`GET /api/expenses` 按 `spentAt DESC, id DESC` 返回，`PUT /api/expenses/:id` 三个字段都可改（补记/改时间）。
+- `POST /api/chat`：body 是 `{ messages, model }`，返回 `createUIMessageStreamResponse` 的流式响应；没有 models 端点，模型列表由前端读 `runtimeConfig.public.chatModels` 得到（见 F15）。
 
 ## 数据库
 
@@ -168,6 +169,7 @@
 - **日期选择器 `DatePicker`（记账页 / 笔记页共用）**：`app/components/DatePicker.vue` 把 `UInputDate` + 尾部日历按钮 + `UPopover` + `UCalendar` 封成一个只收发 `YYYY-MM-DD` 字符串的组件，表单里写 `<DatePicker v-model="formState.xxx" />` 即可；`:reference` 用包住 `UInputDate` 的 `<div ref="dateField" class="inline-block">` 定位——不要用 `inputsRef[3]`（那是内部某一段，弹窗会压在输入框上），也不要用组件的 `$el`（实测弹出的位置跑到视口外）；`:content="{ side: 'right', align: 'start', sideOffset: 8 }"` 让日历弹在整个输入框右侧而不是正下方（空间不够时 Reka 会自动翻到左侧）。`UInputDate` 空值用 `null`、`UCalendar` 用 `undefined`，两种空值差异在组件内部各配一个 computed 消化掉、共用同一份字符串；日期对象来自 `@internationalized/date`（`UInputDate`/`UCalendar` 的 peer 依赖，已在 `dependencies` 声明）
 - 记账页的分组列表用 `UCard`：日期与小计放进 `#header`（`root` 的 `divide-y` 自动分隔 header 与 body）；`:ui` 里 `root: 'ring-inset'`、`body: 'p-0 divide-y divide-default'`（`divide-y` 落在 body 的直接子元素即各行上承接分隔线），header 的主题内边距（`p-4 sm:px-6`）按需覆盖——注意 `sm:px-*` 要单独再覆盖一次才会在 sm 断点生效，只写 `p-0` 会残留主题的 `sm:px-6`；`ring-inset` 则避免描边被滚动容器（`overflow-y-auto` 会把 `overflow-x` 连带变成 `auto`）裁掉。笔记页也按天分组用 `UCard`：header 放日期、body 用 `divide-y` 分隔当天的笔记行，`:ui` 与记账页同款（`root: 'ring-inset'`）。不要手写 `ring-default` / `bg-default` 这类语义色 class 去拼表面
 - `UTree` 没有拖拽能力（底层 Reka `TreeRoot` 亦无），排序只用右键菜单的移动项实现
+- 书签页的 `UTree` 传 `size="xl"`（文字 `text-base`、图标 `size-6`，比默认 `md` 大一圈）；`treeLinkUi` 只覆盖选中样式，不含尺寸
 - **`UTree` 单选时 `modelValue` 收的是 item 对象本身**（Reka 内部用 `getKey` 比较，不比较引用），传对应节点对象进去就有主题默认的选中样式（`selected` 变体给的是 `before:bg-elevated` 底色 + `text-highlighted`，hover 还有 `hover:before:bg-elevated/50`）。选中样式统一由 `ui.link` 覆盖决定，两处不一样：书签页的树是导航，`treeLinkUi` 把底色和文字色一起去掉（`hover:text-inherit hover:before:bg-transparent before:bg-inherit text-inherit`）；移动弹窗是选择器，底色同样去掉，但**必须留一个选中标记**，所以多了 `aria-selected:text-primary`（选中行文字变主题色、其余行 `text-inherit`，悬停不上色以免和选中混淆）——`aria-selected` 是 UTree/Reka 打在节点上的，不需要额外 data 属性。两份 `ui` 各写一遍、不抽常量。书签页隐藏 `linkTrailingIcon` 是去掉导航箭头；移动弹窗也隐藏它，因为那棵树不折叠（见下一条）
 - **点击 `UTree` 节点会同时触发选中与折叠/展开**（Reka `TreeItem` 的 onClick 先 select 再 toggle），没有单独的展开按钮。移动弹窗那棵树只用来选目标：把 `expanded` 做成**受控值**（`collectExpanded` 收集所有文件夹的 key），点击时 Reka 发出的 `update:expanded` 不采纳，所以**点一下只选中、不会折叠**，所有文件夹保持展开；再配 `ui.linkTrailingIcon: 'hidden'` 隐藏展开/折叠箭头。另外单选默认 `selectionBehavior: 'toggle'`（重复点同一项会取消选中）——那会造成「高亮没了、但 `formState.target` 还留着」的不一致，所以移动弹窗设 `selection-behavior="replace"`，点同一个文件夹仍保持选中
 - **`UTree` 的 `get-key` 会被塞一个空对象**：Reka 用 `getKey(modelValue ?? {})` 探测「当前没有选中」，所以 `get-key` 必须对 `{}` 也安全——`bookmarks.vue` 写成 `String(item.id)`（`String(undefined)` 无害）。**不要在 `get-key` 里对节点做多一层取值**（如 `item.xxx.id`）：`{}` 上没有 `xxx`，会在树挂载时抛 `Cannot read properties of undefined`、**整页白屏**（这个坑真踩过一次）
@@ -191,7 +193,7 @@
 - 部署命令 `pnpm deploy` 通过 `cross-env` 跨平台设置 `NITRO_PRESET=cloudflare_module`，然后执行：构建 Nitro preset `cloudflare_module` → `wrangler deploy --keep-vars` → 应用 D1 迁移（`wrangler --config .output/server/wrangler.json d1 migrations apply DB --remote`）
 - `wrangler deploy` 从根目录运行，经构建生成且已被 gitignore 的 `.wrangler/deploy/config.json` 重定向到 `.output/server/wrangler.json`；迁移命令需显式 `--config .output/server/wrangler.json`（`migrations_dir` 为相对该文件的 `db/migrations/sqlite/`）
 - 部署前提：wrangler 已认证（`wrangler login`，或设置 `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` 环境变量）
-- 生产密钥：`wrangler secret put NUXT_AUTH_PASSWORD`（登录密码）与 `wrangler secret put NUXT_APP_SECRET`（≥32 字符随机串，可用 `openssl rand -base64 32` 生成）；两者与本地 `.env` 的值独立，`--keep-vars` 不会覆盖 secrets。旧的 `AUTH_SECRET` 可 `wrangler secret delete AUTH_SECRET` 删除
+- 生产密钥：`wrangler secret put NUXT_AUTH_PASSWORD`（登录密码）与 `wrangler secret put NUXT_APP_SECRET`（≥32 字符随机串，可用 `openssl rand -base64 32` 生成）；两者与本地 `.env` 的值独立，`--keep-vars` 不会覆盖 secrets。旧的 `AUTH_SECRET` 可 `wrangler secret delete AUTH_SECRET` 删除。Chat 同理：`wrangler secret put NUXT_CHAT_API_KEY`（Provider 密钥）；`NUXT_CHAT_BASE_URL` / `NUXT_PUBLIC_CHAT_MODELS` 按需设为 secret 或 var
 - `pnpm backup` 导出远程 D1 到 `db.sql`（已被 gitignore），经 binding `DB` 从根 `wrangler.jsonc` 解析库名，不依赖构建产物
 
 ## 约束
