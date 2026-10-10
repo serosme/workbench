@@ -10,7 +10,7 @@
 
 - **F1 登录**：单用户密码（环境变量 `NUXT_AUTH_PASSWORD`，即 `runtimeConfig.authPassword`）；校验通过后用 Nuxt 4.6 的 `useSession`（`nuxt/server`）写入 `nuxt-session` cookie（默认 httpOnly/secure/sameSite=lax，maxAge 1 天），密封用 Nuxt 的应用密钥 `NUXT_APP_SECRET`（≥32 字符，session 内部经 `deriveSecret` 读取）；除 `/api/auth/` 外所有 API 由 `server/middleware/auth.ts` 用 `getSession` 校验；CSRF 防护依赖该 cookie 的 `sameSite=lax`（跨站 POST 不带 cookie），不要改成 `none`。
 - **F2 书签数据**：一次拉全量，`sortBookmarks` 排序后 `buildTree` 组成单树——文件夹在上（各带子书签），根级书签按 position 落在最下边。
-- **F3 双栏与节点菜单**：节点右键打开操作菜单，节点链接隐藏默认尾随箭头；左栏（35%）是书签树、右栏（65%）是 Chat（`ChatPanel`）；书签树区域铺满高度、空白处右键新建（文件夹/书签），无底部新建虚拟项。
+- **F3 双栏与节点菜单**：节点右键打开操作菜单，节点链接隐藏默认尾随箭头；`md` 起左栏（35%）是书签树、右栏（65%）是 Chat（`ChatPanel`），窄屏（`md` 以下）隐藏右栏、书签树占满整宽；书签树区域铺满高度、空白处右键新建（文件夹/书签），无底部新建虚拟项。
 - **F4 新建/编辑**：书签、文件夹各一个 create/edit 双模式弹窗；新建位置由服务端在 `POST /api/bookmarks` 计算（见「排序模型」），提交带 `submitting` 守卫防重复提交。
 - **F5 删除**：非空文件夹拒绝删除；删除后同组剩余项整段重编号。
 - **F6 移动**：Up / Down（同级一步）、To Top / To Bottom（同级首尾，整组一次重编号）、To Folder（跨父级，`MoveFormModal` 选目标父级，落到目标分组末尾）收在节点菜单的 **Move 二级菜单**里；分组首尾时对应子项 disabled，请求在途时整个 Move 菜单 disabled。
@@ -141,7 +141,7 @@
 
 - **删除刷新时序**：`useDeleteBookmark` / `useDeleteFolder` / `useDeleteNote` / `useDeleteFile` / `useDeleteExpense` 都在 DELETE 成功后立即调用传入的 `refresh()`（不 await），随后提示成功；即「删除类 composable 统一收一个 `refresh` 回调」。
 - **文案语言与页面导航**：所有页面的菜单、弹窗、提示等界面文案统一使用英文（Toast 也是英文，`selfFetch` 的错误提示见 F8）；代码注释仍用中文。`PageNav`（`fixed bottom-4 right-4` 的竖排仅图标按钮，按 `useRoute().path` 过滤掉当前页、只留其他页互跳）统一由默认布局渲染，页面不再自己写导航
-- **页面外壳（默认布局）**：`app/layouts/default.vue` 统一给页面「满高 + 四边留白」并渲染 `PageNav`；`app.vue` 用 `<NuxtLayout>` 包 `<NuxtPage>`。留白是 `px-[25vw] py-[10vh] h-screen`；页面内容根元素自己写 `h-full`（`h-screen` 已在布局上）；`login` / `index` 用 `definePageMeta({ layout: false })` 不套外壳
+- **页面外壳（默认布局）**：`app/layouts/default.vue` 统一给页面「满高 + 四边留白」并渲染 `PageNav`；`app.vue` 用 `<NuxtLayout>` 包 `<NuxtPage>`。留白移动端为 `px-4 py-4`、`md` 起为 `px-[25vw] py-[10vh]`（`h-screen`）；页面内容根元素自己写 `h-full`（`h-screen` 已在布局上）；`login` / `index` 用 `definePageMeta({ layout: false })` 不套外壳
 - **弹窗操作按钮**：所有弹窗的操作按钮统一放在 `UModal` 的 `#footer`、右对齐，外层固定用 `<div class="flex justify-end gap-2 w-full">`。表单弹窗的按钮不在 `<UForm>` 内，所以不用 `type="submit"`，而是给 `UForm` 挂 `ref="formRef"`（`const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')`），footer 的按钮用 `@click="formRef?.submit()"`——`UForm.submit()` 会先跑校验再触发 `@submit`，校验链路（如书签/文件夹的 `:validate`）不受影响。登录页的 `UAuthForm` 提交按钮是整行宽（`block`），不在此列。移动弹窗（`MoveFormModal`）没有校验、不套 `UForm`，footer 按钮直接 `@click="handleSubmit"`
 - **笔记页按天分组**：`/notes` 是 `h-full overflow-y-auto scrollbar-none` 的滚动区 + `space-y-6`（留白交给默认布局），页面用 `toDateKey(writtenAt)` 把笔记按本地日期分组（与记账页共用 `datetime` 工具），每组一张 `UCard`（header 是 `formatDateKey` 的日期、body 是当天的笔记行），组顺序与组内顺序都顺着 `GET /api/notes` 的 `writtenAt DESC`，页面不做客户端排序
 - **笔记列表只给标题、正文只在弹窗里**：每天卡片里的行只放标题（`truncate` 单行截断），不放正文预览（曾经的 `max-h-40` 截断预览已去掉）；正文只在点行打开的新建/编辑弹窗里显示与修改。这样列表保持简洁，长文也不会把卡片撑高

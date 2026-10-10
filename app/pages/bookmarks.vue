@@ -56,7 +56,7 @@ function getItemKey(item: TreeItem): string {
 
 <template>
   <div class="flex h-full">
-    <aside class="flex h-full min-w-0 flex-col pr-6" style="width: 35%">
+    <aside class="flex h-full w-full min-w-0 flex-col pr-0 md:w-[35%] md:pr-6">
       <UContextMenu :items="contextMenuItems" class="block min-h-0 flex-1">
         <div class="h-full min-h-32 overflow-y-auto scrollbar-none" @contextmenu="openContextMenu">
           <UTree :items="contextTree" :get-key="getItemKey" :ui="treeLinkUi" size="xl" />
@@ -64,7 +64,7 @@ function getItemKey(item: TreeItem): string {
       </UContextMenu>
     </aside>
 
-    <section class="h-full min-w-0 flex-1 border-l border-default pl-6">
+    <section class="hidden h-full min-w-0 flex-1 border-l border-default pl-6 md:block">
       <ChatPanel />
     </section>
 
