@@ -6,8 +6,7 @@ const { getMenu } = useFileMenu(uploadForm, remove)
 </script>
 
 <template>
-  <div class="pl-[30vw] pr-[20vw] py-[10vh] flex h-screen">
-    <PageNav />
+  <div class="flex h-full">
     <div class="w-1/2 min-w-0 h-full">
       <FileTree :items="tree" :get-menu="getMenu" />
     </div>

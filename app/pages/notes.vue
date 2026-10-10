@@ -32,7 +32,7 @@ function openContextMenu(event: MouseEvent) {
 </script>
 
 <template>
-  <div class="px-[25vw] py-[10vh] h-screen">
+  <div class="h-full">
     <UContextMenu :items="contextMenuItems" class="block h-full">
       <div class="h-full overflow-y-auto scrollbar-none" @contextmenu="openContextMenu">
         <div class="space-y-6">
@@ -66,6 +66,5 @@ function openContextMenu(event: MouseEvent) {
       :item="noteForm.modal.item"
       @saved="refresh"
     />
-    <PageNav />
   </div>
 </template>

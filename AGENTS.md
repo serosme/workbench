@@ -17,12 +17,13 @@
 - **F7 排序位置模型**：见「前端架构约定」的「排序模型」「重编号实现」。
 - **F8 请求与错误**：`selfFetch` 请求错误弹英文 toast，401 跳登录；`useSelfFetch` 是其 `useFetch` 封装。
 - **F9 数据库**：见「数据库」；**F10 部署/备份**：见「部署」；**F11 文件**：见「文件存储」；**F12 工程配置与技能**：见「命令」「约束」「项目技能」。
-- **F13 笔记**：每条笔记含标题（`title`）、正文（`content`）与书写日期（`writtenAt`，表单默认今天、可改）；`/notes` 是居中单列（`px-[25vw] py-[10vh]`）的卡片列表，按书写日期倒序分组——每天一张 `UCard`（header 是日期、body 是当天笔记，行只显示标题），组顺序与组内顺序都来自服务端；空白处右键新建（无独立按钮），行左键进编辑、右键编辑/删除（无只读详情弹窗），删除不弹确认框；卡片样式见「Nuxt UI」。
-- **F14 记账**：`/expenses` 是仅含「消费日期 / 金额 / 消费内容」三项的流水列表，按 `spentAt` 倒序，先按月分段（每月一张 `UCard` 显示该月合计），月内再按本地日期分成多张 `UCard`（header 显示日期与小计，body 是当天流水行）；消费只精确到天，表单用 `DatePicker` 选日期（存当天本地零点的毫秒时间戳）；金额以整数「分」存储（`amount`），界面出入都经 `formatAmount` / `parseAmount` 换算，不做元的浮点运算；空白处右键新建，行左键进编辑、右键编辑/删除，删除不弹确认框；页面骨架：外层 `px-[25vw] py-[10vh] h-screen`，滚动区 `h-full overflow-y-auto` 并用 Tailwind 内置的 `scrollbar-none` 隐藏滚动条）。
+- **F13 笔记**：每条笔记含标题（`title`）、正文（`content`）与书写日期（`writtenAt`，表单默认今天、可改）；`/notes` 是居中单列的卡片列表（四周留白由默认布局给），按书写日期倒序分组——每天一张 `UCard`（header 是日期、body 是当天笔记，行只显示标题），组顺序与组内顺序都来自服务端；空白处右键新建（无独立按钮），行左键进编辑、右键编辑/删除（无只读详情弹窗），删除不弹确认框；卡片样式见「Nuxt UI」。
+- **F14 记账**：`/expenses` 是仅含「消费日期 / 金额 / 消费内容」三项的流水列表，按 `spentAt` 倒序，先按月分段（每月一张 `UCard` 显示该月合计），月内再按本地日期分成多张 `UCard`（header 显示日期与小计，body 是当天流水行）；消费只精确到天，表单用 `DatePicker` 选日期（存当天本地零点的毫秒时间戳）；金额以整数「分」存储（`amount`），界面出入都经 `formatAmount` / `parseAmount` 换算，不做元的浮点运算；空白处右键新建，行左键进编辑、右键编辑/删除，删除不弹确认框；滚动区 `h-full overflow-y-auto` 并用 Tailwind 内置的 `scrollbar-none` 隐藏滚动条，外层留白由默认布局给）。
 
 ## 目录职责
 
 - `app/pages/`：`bookmarks.vue`（双树）、`files.vue`（文件树 + 预览区）、`notes.vue`（单列卡片列表）、`expenses.vue`（记账流水）、`login.vue`；`index.vue` 重定向 `/bookmarks`（`nuxt.config.ts` 的 routeRules 同款）。
+- `app/layouts/`：`default.vue`（页面外壳：满高 + 四边留白 + 统一渲染 `PageNav`；只有 bookmarks 用 `offset` 变体，见「前端架构约定」）；`app.vue` 用 `<NuxtLayout>` 包 `<NuxtPage>`。
 - `app/components/`：`FileTree`、`FileUploadModal`、`BookmarkFormModal`、`FolderFormModal`、`MoveFormModal`、`NoteFormModal`、`ExpenseFormModal`、`PageNav`、`LoginForm`。
 - `app/composables/`：数据 `useBookmarks` / `useFiles` / `useNotes` / `useExpenses`，弹窗状态 `*Form`，删除 `useDelete*`，排序 `useReorderBookmarks`，右键菜单 `*Menu`，各自独立、互不混合。
 - `app/utils/`：`selfFetch` / `useSelfFetch`（请求与错误）、`bookmark-tree`（排序/组树）、`bookmark-menu`（书签与文件夹共用的 Move 子菜单）、`money`（分与元的换算）、`datetime`（日期/月份显示格式、「YYYY-MM-DD」↔ 当天零点毫秒时间戳的互转）。
@@ -131,15 +132,16 @@
 - 上传弹窗（`FileUploadModal.vue`）收文件 + 路径前缀 + 上传进度条。最终 key 是 `prefix/文件名`；路径为空就是根目录；在文件夹里上传时路径默认是该文件夹的 `key`，用户可以继续往后追加一层（如 `documents/photos`），**新增的层不需要预先存在**，上传后自然会出现在树里——这就是替代「新建文件夹」的做法。上传期间路径输入与文件选择都 disabled，避免中途改 key
 - 前端 `useFiles` 的 `upload(key, file, onProgress)` 把 key 的目录部分交给 `useMultipartUpload` 的 `prefix`（`key.slice(0, -文件名)`），文件本体直接用 `File`——create 内部就是按 `file.name` 拼 pathname，不需要再包一层 `new File`；进度的 `watch(progress)` 建在事件处理器的调用栈里（不在 setup 作用域），不会随组件销毁自动停止，所以 `upload()` 里用 `try/finally` 手动 `stop()`；库上报的是「已完成片数 / 总片数」且先赋值再 `push`（滞后一片），要按 `chunks` 换算成正在传的那一片，否则小于一片的文件全程 0%、多片文件最多停在 `(n-1)/n`；上传弹窗通过 `upload` prop 注入，**不要在弹窗里再调一次 `useFiles()`**——那会在同一 key 上重复发起 `useSelfFetch('/api/files/tree')`，Nuxt 去重取消其中一个请求并抛 `AbortError: AsyncData request cancelled by deduplication` 并被全局 toast 弹出来
 - 右键菜单靠 token class 定位节点：`UTree` 只把 `item.class` 透传到带 `data-slot="link"` 的元素上、不转发任意属性，所以 `FileTree.vue` 的 `buildTreeItems` 组树时给每个节点挂 `file-node-<n>` 类并同时建 `token → node` 的 Map，`@contextmenu` 里 `closest('[data-slot="link"]')` 取类名再查 Map（拿不到类名就当成空白处，弹根级菜单）；`bookmarks.vue` 的 `withContextTokens` 同样用 `bookmark-node-<id>` token，但右键时从类名解析 id、在对应树里 `findNode` 反查，不建 Map（避免 Map 随每次 refresh 无限增长）；升级 Nuxt UI 时要重新核对 `item.class` 是否仍落在 link 元素上
-- `files.vue` 的文件树区域铺满左侧栏并支持空白处右键上传，右侧是**预留的空白预览区**（还没有选中/预览逻辑，不维护 selected 状态）；页面用 `flex h-screen`（而不是书签页的 `min-h-screen flex`）——树要撑满视口高度，下方空白处才能右键上传，所以子元素要用 `h-full`；`FileTree` 的 `items` 收 `TreeItem[]`，只负责展示与右键菜单，不向外抛选中事件
+- `files.vue` 的文件树区域铺满左侧栏并支持空白处右键上传，右侧是**预留的空白预览区**（还没有选中/预览逻辑，不维护 selected 状态）；页面内容用 `flex h-full`（高度来自默认布局的 `h-screen`）——树要撑满高度，下方空白处才能右键上传，所以子元素要用 `h-full`；`FileTree` 的 `items` 收 `TreeItem[]`，只负责展示与右键菜单，不向外抛选中事件
 - 服务端不校验 prefix 是否存在，也不校验它是不是已存在的目录（只拦同名文件）
 
 ## 前端架构约定
 
 - **删除刷新时序**：`useDeleteBookmark` / `useDeleteFolder` / `useDeleteNote` / `useDeleteFile` / `useDeleteExpense` 都在 DELETE 成功后立即调用传入的 `refresh()`（不 await），随后提示成功；即「删除类 composable 统一收一个 `refresh` 回调」。
-- **文案语言与页面导航**：所有页面的菜单、弹窗、提示等界面文案统一使用英文（Toast 也是英文，`selfFetch` 的错误提示见 F8）；代码注释仍用中文。各页面右下角统一渲染 `PageNav`（`fixed bottom-4 right-4` 的竖排仅图标按钮，按 `useRoute().path` 过滤掉当前页、只留其他页互跳），页面自己不再写导航按钮
+- **文案语言与页面导航**：所有页面的菜单、弹窗、提示等界面文案统一使用英文（Toast 也是英文，`selfFetch` 的错误提示见 F8）；代码注释仍用中文。`PageNav`（`fixed bottom-4 right-4` 的竖排仅图标按钮，按 `useRoute().path` 过滤掉当前页、只留其他页互跳）统一由默认布局渲染，页面不再自己写导航
+- **页面外壳（默认布局）**：`app/layouts/default.vue` 统一给页面「满高 + 四边留白」并渲染 `PageNav`；`app.vue` 用 `<NuxtLayout>` 包 `<NuxtPage>`。默认是居中留白 `px-[25vw] py-[10vh] h-screen`（**不写 `offset` 就不偏移**）；只有 bookmarks 加 `definePageMeta({ offset: true })` 切到 `pl-[30vw] pr-[20vw]`（内容整体右移 5vw）。页面内容根元素自己写 `h-full`（`h-screen` 已在布局上）；`login` / `index` 用 `definePageMeta({ layout: false })` 不套外壳
 - **弹窗操作按钮**：所有弹窗的操作按钮统一放在 `UModal` 的 `#footer`、右对齐，外层固定用 `<div class="flex justify-end gap-2 w-full">`。表单弹窗的按钮不在 `<UForm>` 内，所以不用 `type="submit"`，而是给 `UForm` 挂 `ref="formRef"`（`const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')`），footer 的按钮用 `@click="formRef?.submit()"`——`UForm.submit()` 会先跑校验再触发 `@submit`，校验链路（如书签/文件夹的 `:validate`）不受影响。登录页的 `UAuthForm` 提交按钮是整行宽（`block`），不在此列
-- **笔记页按天分组**：`/notes` 外层是居中留白容器 `px-[25vw] py-[10vh] h-screen`（与记账页一致；不像书签/文件页那样 `pl-[30vw] pr-[20vw]` 偏右），里面是 `h-full overflow-y-auto scrollbar-none` 的滚动区 + `space-y-6`；页面用 `toDateKey(writtenAt)` 把笔记按本地日期分组（与记账页共用 `datetime` 工具），每组一张 `UCard`（header 是 `formatDateKey` 的日期、body 是当天的笔记行），组顺序与组内顺序都顺着 `GET /api/notes` 的 `writtenAt DESC`，页面不做客户端排序
+- **笔记页按天分组**：`/notes` 是 `h-full overflow-y-auto scrollbar-none` 的滚动区 + `space-y-6`（留白交给默认布局；书签页的偏右是布局的 `offset` 变体），页面用 `toDateKey(writtenAt)` 把笔记按本地日期分组（与记账页共用 `datetime` 工具），每组一张 `UCard`（header 是 `formatDateKey` 的日期、body 是当天的笔记行），组顺序与组内顺序都顺着 `GET /api/notes` 的 `writtenAt DESC`，页面不做客户端排序
 - **笔记列表只给标题、正文只在弹窗里**：每天卡片里的行只放标题（`truncate` 单行截断），不放正文预览（曾经的 `max-h-40` 截断预览已去掉）；正文只在点行打开的新建/编辑弹窗里显示与修改。这样列表保持简洁，长文也不会把卡片撑高
 - **笔记行的右键定位**：笔记行是页面自己渲染的 DOM，直接挂 `data-note-id`，`@contextmenu` 里用 `closest('[data-note-id]')` 反查记录；**不要照搬书签/文件树的 token class 方案**——那是 `UTree` 只透传 `item.class`、不转发任意属性导致的变通。`closest` 取不到就是空白处 → 根级菜单（新建笔记）。右键处理器里**不能 `event.stopPropagation()`**：Reka 的 ContextMenuTrigger 要靠事件冒泡到触发元素才会在指针位置打开菜单
 - **笔记弹窗**：新建/编辑共用 `NoteFormModal`，`title`、`writtenAt`（书写日期）、`content` 都是必填 `UFormField`（footer 的 Save 在 title/content 都非空时才可用），`writtenAt` 用共用的 `DatePicker` 组件（见「Nuxt UI」）；`content` 的 `UTextarea` 固定 `:rows="20"`（配 `:ui="{ base: 'resize-none' }"`、不加 `autoresize`），内容超出后文本框自己出滚动条。左键点行即进编辑（与右键菜单的 Edit 同一入口）

@@ -3,6 +3,9 @@ import type { DropdownMenuItem, TreeItem } from '@nuxt/ui'
 import { menuBookmark } from '~/utils/bookmark-menu'
 import { buildFolderTree } from '~/utils/bookmark-tree'
 
+// 内容整体右移 5vw（用布局的 offset 变体）
+definePageMeta({ offset: true })
+
 const bookmarkForm = useBookmarkForm()
 const folderForm = useFolderForm()
 const moveForm = useMoveForm()
@@ -75,8 +78,7 @@ function getItemKey(item: TreeItem): string {
 </script>
 
 <template>
-  <div class="pl-[30vw] pr-[20vw] py-[10vh] flex h-screen">
-    <PageNav />
+  <div class="flex h-full">
     <div class="w-1/2 min-w-0 h-full">
       <UContextMenu :items="contextMenuItems" class="block h-full">
         <div class="h-full min-h-32 w-full" @contextmenu="openContextMenu($event, true)">
