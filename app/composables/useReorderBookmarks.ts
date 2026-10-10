@@ -55,11 +55,11 @@ export function useReorderBookmarks(
   }
 
   async function move(id: number, direction: MoveDirection) {
-    const found = locate(id)
-    // 已在两端就别动：否则 up 会算出 target = -1，splice(-1, 0, id) 会把这一项插到倒数第二（静默写坏顺序）。
-    if (!found || !canMove(id, direction))
+    // canMove 内含 locate：不在分组里、或已在该方向的端点都直接返回；
+    // 否则 up 会算出 target = -1，splice(-1, 0, id) 会把这一项插到倒数第二（静默写坏顺序）。
+    if (!canMove(id, direction))
       return
-    const { item, group, index } = found
+    const { item, group, index } = locate(id)!
     // 先把自己摘出去，再插到目标下标：首/尾一次到位，不用连着调 N 次「上一格」。
     const target = {
       up: index - 1,
@@ -67,7 +67,8 @@ export function useReorderBookmarks(
       top: 0,
       bottom: group.length - 1,
     }[direction]
-    const ids = group.map(b => b.id).filter((_, i) => i !== index)
+    const ids = group.map(b => b.id)
+    ids.splice(index, 1)
     ids.splice(target, 0, item.id)
     await reorder(item, ids)
   }

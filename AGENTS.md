@@ -1,6 +1,6 @@
 # Workbench Agent Instructions
 
-个人自用的 Nuxt 4 书签、文件、笔记与记账应用：单用户密码登录，书签页为左右双树，文件页为文件树 + 预留预览区，笔记页为单列笔记卡片列表，记账页为按天分组的流水列表；书签节点及空白区域、文件树节点及空白区域、笔记卡片及空白区域、记账行及空白区域均通过右键打开上下文菜单。
+个人自用的 Nuxt 4 书签、文件、笔记与记账应用：单用户密码登录，书签页为书签树 + 预留 Chat 区，文件页为文件树 + 预留预览区，笔记页为单列笔记卡片列表，记账页为按天分组的流水列表；书签节点及空白区域、文件树节点及空白区域、笔记卡片及空白区域、记账行及空白区域均通过右键打开上下文菜单。
 
 技术栈：Nuxt 4、Nuxt UI v4、Nuxt Hub、Drizzle ORM + SQLite/Cloudflare D1、Tailwind CSS v4、TypeScript 6。个人自用、单用户、单浏览器。
 
@@ -9,8 +9,8 @@
 ## 功能
 
 - **F1 登录**：单用户密码（环境变量 `NUXT_AUTH_PASSWORD`，即 `runtimeConfig.authPassword`）；校验通过后用 Nuxt 4.6 的 `useSession`（`nuxt/server`）写入 `nuxt-session` cookie（默认 httpOnly/secure/sameSite=lax，maxAge 1 天），密封用 Nuxt 的应用密钥 `NUXT_APP_SECRET`（≥32 字符，session 内部经 `deriveSecret` 读取）；除 `/api/auth/` 外所有 API 由 `server/middleware/auth.ts` 用 `getSession` 校验；CSRF 防护依赖该 cookie 的 `sameSite=lax`（跨站 POST 不带 cookie），不要改成 `none`。
-- **F2 书签数据**：一次拉全量，`sortBookmarks` 排序后 `buildTree` 组树——左树为所有文件夹及其子书签，右树为根级书签。
-- **F3 双栏与节点菜单**：节点右键打开操作菜单，节点链接隐藏默认尾随箭头；左右面板及右键区域铺满视口高度，面板空白处右键新建（左：文件夹/书签，右：书签），无底部新建虚拟项。
+- **F2 书签数据**：一次拉全量，`sortBookmarks` 排序后 `buildTree` 组成单树——文件夹在上（各带子书签），根级书签按 position 落在最下边。
+- **F3 双栏与节点菜单**：节点右键打开操作菜单，节点链接隐藏默认尾随箭头；左栏（35%）是书签树、右栏（65%）预留给 Chat；书签树区域铺满高度、空白处右键新建（文件夹/书签），无底部新建虚拟项。
 - **F4 新建/编辑**：书签、文件夹各一个 create/edit 双模式弹窗；新建位置由服务端在 `POST /api/bookmarks` 计算（见「排序模型」），提交带 `submitting` 守卫防重复提交。
 - **F5 删除**：非空文件夹拒绝删除；删除后同组剩余项整段重编号。
 - **F6 移动**：Up / Down（同级一步）、To Top / To Bottom（同级首尾，整组一次重编号）、To Folder（跨父级，`MoveFormModal` 选目标父级，落到目标分组末尾）收在节点菜单的 **Move 二级菜单**里；分组首尾时对应子项 disabled，请求在途时整个 Move 菜单 disabled。
@@ -22,12 +22,12 @@
 
 ## 目录职责
 
-- `app/pages/`：`bookmarks.vue`（双树）、`files.vue`（文件树 + 预览区）、`notes.vue`（单列卡片列表）、`expenses.vue`（记账流水）、`login.vue`；`index.vue` 重定向 `/bookmarks`（`nuxt.config.ts` 的 routeRules 同款）。
-- `app/layouts/`：`default.vue`（页面外壳：满高 + 四边留白 + 统一渲染 `PageNav`；只有 bookmarks 用 `offset` 变体，见「前端架构约定」）；`app.vue` 用 `<NuxtLayout>` 包 `<NuxtPage>`。
+- `app/pages/`：`bookmarks.vue`（书签树 + 预留 Chat 区，35/65 分栏）、`files.vue`（文件树 + 预览区）、`notes.vue`（单列卡片列表）、`expenses.vue`（记账流水）、`login.vue`；`index.vue` 重定向 `/bookmarks`（`nuxt.config.ts` 的 routeRules 同款）。
+- `app/layouts/`：`default.vue`（页面外壳：满高 + 四边留白 + 统一渲染 `PageNav`）；`app.vue` 用 `<NuxtLayout>` 包 `<NuxtPage>`。
 - `app/components/`：`FileTree`、`FileUploadModal`、`BookmarkFormModal`、`FolderFormModal`、`MoveFormModal`、`NoteFormModal`、`ExpenseFormModal`、`PageNav`、`LoginForm`。
 - `app/composables/`：数据 `useBookmarks` / `useFiles` / `useNotes` / `useExpenses`，弹窗状态 `*Form`，删除 `useDelete*`，排序 `useReorderBookmarks`，右键菜单 `*Menu`，各自独立、互不混合。
 - `app/utils/`：`selfFetch` / `useSelfFetch`（请求与错误）、`bookmark-tree`（排序/组树）、`bookmark-menu`（书签与文件夹共用的 Move 子菜单）、`money`（分与元的换算）、`datetime`（日期/月份显示格式、「YYYY-MM-DD」↔ 当天零点毫秒时间戳的互转）。
-- `server/`：`api/{auth,bookmarks,files,notes,expenses}`、`utils/{renumber,blob-files,blob-tree}`、`db/schema.ts` 与 `db/migrations/sqlite/`。
+- `server/`：`api/{auth,bookmarks,files,notes,expenses}`、`utils/{renumber,bookmark-group,blob-files,blob-tree}`、`db/schema.ts` 与 `db/migrations/sqlite/`。
 - `shared/types/`：前后端共享类型（`db.ts`、`files.ts`）。
 
 ## 命令
@@ -131,7 +131,7 @@
 - 删除走 `server/api/files/delete.delete.ts`：key 以 `/` 结尾（文件夹）时用 `listBlobs(path)` 收集整棵子树再一次性 `blob.del(keys)`，否则直接 `blob.del(path)`；两个 driver 的 delete 都忽略不存在的 key，故不做存在性校验（幂等，也不需要考虑「别人先删了」）。handler 不写 return：Nitro 用 `preemptive` router，`undefined` 会被转成 `null` → 204
 - 上传弹窗（`FileUploadModal.vue`）收文件 + 路径前缀 + 上传进度条。最终 key 是 `prefix/文件名`；路径为空就是根目录；在文件夹里上传时路径默认是该文件夹的 `key`，用户可以继续往后追加一层（如 `documents/photos`），**新增的层不需要预先存在**，上传后自然会出现在树里——这就是替代「新建文件夹」的做法。上传期间路径输入与文件选择都 disabled，避免中途改 key
 - 前端 `useFiles` 的 `upload(key, file, onProgress)` 把 key 的目录部分交给 `useMultipartUpload` 的 `prefix`（`key.slice(0, -文件名)`），文件本体直接用 `File`——create 内部就是按 `file.name` 拼 pathname，不需要再包一层 `new File`；进度的 `watch(progress)` 建在事件处理器的调用栈里（不在 setup 作用域），不会随组件销毁自动停止，所以 `upload()` 里用 `try/finally` 手动 `stop()`；库上报的是「已完成片数 / 总片数」且先赋值再 `push`（滞后一片），要按 `chunks` 换算成正在传的那一片，否则小于一片的文件全程 0%、多片文件最多停在 `(n-1)/n`；上传弹窗通过 `upload` prop 注入，**不要在弹窗里再调一次 `useFiles()`**——那会在同一 key 上重复发起 `useSelfFetch('/api/files/tree')`，Nuxt 去重取消其中一个请求并抛 `AbortError: AsyncData request cancelled by deduplication` 并被全局 toast 弹出来
-- 右键菜单靠 token class 定位节点：`UTree` 只把 `item.class` 透传到带 `data-slot="link"` 的元素上、不转发任意属性，所以 `FileTree.vue` 的 `buildTreeItems` 组树时给每个节点挂 `file-node-<n>` 类并同时建 `token → node` 的 Map，`@contextmenu` 里 `closest('[data-slot="link"]')` 取类名再查 Map（拿不到类名就当成空白处，弹根级菜单）；`bookmarks.vue` 的 `withContextTokens` 同样用 `bookmark-node-<id>` token，但右键时从类名解析 id、在对应树里 `findNode` 反查，不建 Map（避免 Map 随每次 refresh 无限增长）；升级 Nuxt UI 时要重新核对 `item.class` 是否仍落在 link 元素上
+- 右键菜单靠 token class 定位节点：`UTree` 只把 `item.class` 透传到带 `data-slot="link"` 的元素上、不转发任意属性，所以 `FileTree.vue` 的 `buildTreeItems` 组树时给每个节点挂 `file-node-<n>` 类并同时建 `token → node` 的 Map，`@contextmenu` 里 `closest('[data-slot="link"]')` 取类名再查 Map（拿不到类名就当成空白处，弹根级菜单）；`bookmarks.vue` 的 `withContextTokens` 同样给每个节点挂 `bookmark-node-<id>` 类，但右键时从类名解析出 id、直接在 `data` 里 `find` 出记录（不建 Map，也不反查树节点）；升级 Nuxt UI 时要重新核对 `item.class` 是否仍落在 link 元素上
 - `files.vue` 的文件树区域铺满左侧栏并支持空白处右键上传，右侧是**预留的空白预览区**（还没有选中/预览逻辑，不维护 selected 状态）；页面内容用 `flex h-full`（高度来自默认布局的 `h-screen`）——树要撑满高度，下方空白处才能右键上传，所以子元素要用 `h-full`；`FileTree` 的 `items` 收 `TreeItem[]`，只负责展示与右键菜单，不向外抛选中事件
 - 服务端不校验 prefix 是否存在，也不校验它是不是已存在的目录（只拦同名文件）
 
@@ -139,21 +139,21 @@
 
 - **删除刷新时序**：`useDeleteBookmark` / `useDeleteFolder` / `useDeleteNote` / `useDeleteFile` / `useDeleteExpense` 都在 DELETE 成功后立即调用传入的 `refresh()`（不 await），随后提示成功；即「删除类 composable 统一收一个 `refresh` 回调」。
 - **文案语言与页面导航**：所有页面的菜单、弹窗、提示等界面文案统一使用英文（Toast 也是英文，`selfFetch` 的错误提示见 F8）；代码注释仍用中文。`PageNav`（`fixed bottom-4 right-4` 的竖排仅图标按钮，按 `useRoute().path` 过滤掉当前页、只留其他页互跳）统一由默认布局渲染，页面不再自己写导航
-- **页面外壳（默认布局）**：`app/layouts/default.vue` 统一给页面「满高 + 四边留白」并渲染 `PageNav`；`app.vue` 用 `<NuxtLayout>` 包 `<NuxtPage>`。默认是居中留白 `px-[25vw] py-[10vh] h-screen`（**不写 `offset` 就不偏移**）；只有 bookmarks 加 `definePageMeta({ offset: true })` 切到 `pl-[30vw] pr-[20vw]`（内容整体右移 5vw）。页面内容根元素自己写 `h-full`（`h-screen` 已在布局上）；`login` / `index` 用 `definePageMeta({ layout: false })` 不套外壳
-- **弹窗操作按钮**：所有弹窗的操作按钮统一放在 `UModal` 的 `#footer`、右对齐，外层固定用 `<div class="flex justify-end gap-2 w-full">`。表单弹窗的按钮不在 `<UForm>` 内，所以不用 `type="submit"`，而是给 `UForm` 挂 `ref="formRef"`（`const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')`），footer 的按钮用 `@click="formRef?.submit()"`——`UForm.submit()` 会先跑校验再触发 `@submit`，校验链路（如书签/文件夹的 `:validate`）不受影响。登录页的 `UAuthForm` 提交按钮是整行宽（`block`），不在此列
-- **笔记页按天分组**：`/notes` 是 `h-full overflow-y-auto scrollbar-none` 的滚动区 + `space-y-6`（留白交给默认布局；书签页的偏右是布局的 `offset` 变体），页面用 `toDateKey(writtenAt)` 把笔记按本地日期分组（与记账页共用 `datetime` 工具），每组一张 `UCard`（header 是 `formatDateKey` 的日期、body 是当天的笔记行），组顺序与组内顺序都顺着 `GET /api/notes` 的 `writtenAt DESC`，页面不做客户端排序
+- **页面外壳（默认布局）**：`app/layouts/default.vue` 统一给页面「满高 + 四边留白」并渲染 `PageNav`；`app.vue` 用 `<NuxtLayout>` 包 `<NuxtPage>`。留白是 `px-[25vw] py-[10vh] h-screen`；页面内容根元素自己写 `h-full`（`h-screen` 已在布局上）；`login` / `index` 用 `definePageMeta({ layout: false })` 不套外壳
+- **弹窗操作按钮**：所有弹窗的操作按钮统一放在 `UModal` 的 `#footer`、右对齐，外层固定用 `<div class="flex justify-end gap-2 w-full">`。表单弹窗的按钮不在 `<UForm>` 内，所以不用 `type="submit"`，而是给 `UForm` 挂 `ref="formRef"`（`const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')`），footer 的按钮用 `@click="formRef?.submit()"`——`UForm.submit()` 会先跑校验再触发 `@submit`，校验链路（如书签/文件夹的 `:validate`）不受影响。登录页的 `UAuthForm` 提交按钮是整行宽（`block`），不在此列。移动弹窗（`MoveFormModal`）没有校验、不套 `UForm`，footer 按钮直接 `@click="handleSubmit"`
+- **笔记页按天分组**：`/notes` 是 `h-full overflow-y-auto scrollbar-none` 的滚动区 + `space-y-6`（留白交给默认布局），页面用 `toDateKey(writtenAt)` 把笔记按本地日期分组（与记账页共用 `datetime` 工具），每组一张 `UCard`（header 是 `formatDateKey` 的日期、body 是当天的笔记行），组顺序与组内顺序都顺着 `GET /api/notes` 的 `writtenAt DESC`，页面不做客户端排序
 - **笔记列表只给标题、正文只在弹窗里**：每天卡片里的行只放标题（`truncate` 单行截断），不放正文预览（曾经的 `max-h-40` 截断预览已去掉）；正文只在点行打开的新建/编辑弹窗里显示与修改。这样列表保持简洁，长文也不会把卡片撑高
 - **笔记行的右键定位**：笔记行是页面自己渲染的 DOM，直接挂 `data-note-id`，`@contextmenu` 里用 `closest('[data-note-id]')` 反查记录；**不要照搬书签/文件树的 token class 方案**——那是 `UTree` 只透传 `item.class`、不转发任意属性导致的变通。`closest` 取不到就是空白处 → 根级菜单（新建笔记）。右键处理器里**不能 `event.stopPropagation()`**：Reka 的 ContextMenuTrigger 要靠事件冒泡到触发元素才会在指针位置打开菜单
 - **笔记弹窗**：新建/编辑共用 `NoteFormModal`，`title`、`writtenAt`（书写日期）、`content` 都是必填 `UFormField`（footer 的 Save 在 title/content 都非空时才可用），`writtenAt` 用共用的 `DatePicker` 组件（见「Nuxt UI」）；`content` 的 `UTextarea` 固定 `:rows="20"`（配 `:ui="{ base: 'resize-none' }"`、不加 `autoresize`），内容超出后文本框自己出滚动条。左键点行即进编辑（与右键菜单的 Edit 同一入口）
 - **删除一律不弹确认框**：书签 / 文件夹 / 笔记 / 文件（含文件页的文件夹，会整棵删除）都是菜单项一点即删，没有确认弹窗、也没有撤销——个人自用项目刻意保持简单；删除菜单项统一用 `color: 'error'` + `i-lucide-trash-2`（标红）
 - **笔记顺序只由服务端给**：`writtenAt` 是用户可改的书写日期（表单默认今天、存当天本地零点），顺序完全取自 `GET /api/notes` 的 `ORDER BY writtenAt DESC, id DESC`，页面不做客户端排序（书签那套 `sortBookmarks` 是 position 模型专用的）
-- **单一职能 + 依赖注入**：数据（`useBookmarks` / `useFiles` / `useNotes`）、弹窗状态（`*Form`）、删除（`useDelete*`）、排序（`useReorderBookmarks`）、菜单（`*Menu`）各自独立、互不混合；书签/文件夹的新增、编辑、删除全部分离（即使代码相似也不合并），移动弹窗状态独立成 `useMoveForm`。页面（`bookmarks.vue`）实例化 composable 后以参数注入菜单（如 `useFolderMenu(bookmarkForm, folderForm, removeFolder, reorder)`），菜单内部不自行实例化状态类 composable
-- **排序模型**：分组键为 `(parentId, type)`，同组内 `sortBookmarks` 恒定「文件夹优先」→「position 升序」，因此 UI 中一段连续可视区间恰好等于一个分组。客户端排序是唯一权威（`leftTree` / `rightTree` 都经 `sortBookmarks`），不依赖 `GET /api/bookmarks` 的返回顺序。移动**只做整段重编号**（按新顺序把 position 写回 `1..n`），**永不交换 position 值**——历史数据的 position 是全局计数器留下的，可能带偏移和间隙，交换语义未定义且无法自愈。新建位置由服务端计算：`POST /api/bookmarks` 写入前取目标 `(parentId, type)` 分组的 `max(position) + 1`（空分组为 1），客户端不再计算或提交 `position`；编辑不改 `position`。历史数据无需预先迁移，删除或移动时会将目标分组整段归一化为 `1..n`
+- **单一职能 + 依赖注入**：数据（`useBookmarks` / `useFiles` / `useNotes`）、弹窗状态（`*Form`）、删除（`useDelete*`）、排序（`useReorderBookmarks`）、菜单（`*Menu`）各自独立、互不混合；书签与文件夹的弹窗状态形状相同，共用 `useBookmarkForm`（页面按用途各实例化一份），移动弹窗状态独立成 `useMoveForm`。页面（`bookmarks.vue`）实例化 composable 后以参数注入菜单（如 `useFolderMenu(bookmarkForm, folderForm, removeFolder, reorder)`），菜单内部不自行实例化状态类 composable
+- **排序模型**：分组键为 `(parentId, type)`，同组内 `sortBookmarks` 恒定「文件夹优先」→「position 升序」，因此 UI 中一段连续可视区间恰好等于一个分组。客户端排序是唯一权威（`tree` 经 `sortBookmarks`），不依赖 `GET /api/bookmarks` 的返回顺序。移动**只做整段重编号**（按新顺序把 position 写回 `1..n`），**永不交换 position 值**——历史数据的 position 是全局计数器留下的，可能带偏移和间隙，交换语义未定义且无法自愈。新建位置由服务端计算：`POST /api/bookmarks` 写入前取目标 `(parentId, type)` 分组的 `max(position) + 1`（空分组为 1），客户端不再计算或提交 `position`；编辑不改 `position`。历史数据无需预先迁移，删除或移动时会将目标分组整段归一化为 `1..n`
 - **重编号实现**：必须走 `server/utils/renumber.ts` 的 `renumberGroupQuery(parentId, type, orderedIds)`，它用 SQLite JSON1 的 `json_each` 把顺序当参数传入，**语句数恒为 1、绑定参数为常数个且最多 4 个，与分组大小 N 无关**。不要改回「每行一条 UPDATE」（随 N 线性增长，会撞 D1 每批语句数限制），也不要改成「单条 CASE」（要 2N 个绑定参数，会撞 D1 每查询 100 个绑定参数的限制）。**调用方必须传入该分组的完整成员**——服务端不做覆盖度校验，漏传的行不会被更新
 - **移动能力查询成本**：`useReorderBookmarks` 的 `located` computed 预先构造 `id → { item, group, index }` 映射，`locate` 只做 Map 查找。不要在 `canMove` / `locate` 内重排或扫描全量数据；以往扫描造成的约 16ms/次开销是优化此处的原因。
 - **移动的两条通道**：同父级内走 `PUT /api/bookmarks/reorder`（`useReorderBookmarks` 负责）；跨父级走 `PUT /api/bookmarks/move`，由 `MoveFormModal` 自己发请求（与 `BookmarkFormModal` / `FolderFormModal` 一致：弹窗发请求 + `emit`，页面在 `@moved` 上 `refresh`），所以 `useReorderBookmarks` 里没有跨父级的函数。
 - **四个同级移动共用一套逻辑**：`move(id, direction)` / `canMove(id, direction)` 的 direction 是 `up | down | top | bottom`——「走一格」和「到首/尾」只是**目标下标**不同（`{ up: index - 1, down: index + 1, top: 0, bottom: group.length - 1 }`），所以没有单独的 `moveToEdge` / `canMoveToEdge`，也**不要用循环调 `move` 来实现移到首/尾**（一次整组重编号即可）。`move` 开头会先 `canMove` 一次：已在两端时 `up` 会算出 `target = -1`，而 `splice(-1, 0, id)` 会把它插到倒数第二位、静默写坏顺序。
-- **节点菜单的 Move 是共用的二级菜单**：`app/utils/bookmark-menu.ts` 的 `moveMenuItem(bookmark, reorder, moveForm)` 返回一个带 `children` 的子菜单项，同时给书签菜单和文件夹菜单用（各写一份会随项数增加越来越难同步）；`menuBookmark(item)` 是共用的取值器（树节点把原始记录挂在 `_bookmark` 上）。一级菜单因此只有 4~5 项。整个 Move 在请求在途时 disabled，子项各自的 `canMove` 判定照旧。
+- **节点菜单的 Move 是共用的二级菜单**：`app/utils/bookmark-menu.ts` 的 `moveMenuItem(bookmark, reorder, moveForm)` 返回一个带 `children` 的子菜单项，同时给书签菜单和文件夹菜单用（各写一份会随项数增加越来越难同步）；菜单直接收 `Bookmark` 记录（页面右键时解析节点 id、从 `data` 里 find 出记录再交给菜单）。一级菜单因此只有 4~5 项。整个 Move 在请求在途时 disabled，子项各自的 `canMove` 判定照旧。
 - **菜单分节统一**：所有右键菜单都是 `DropdownMenuItem[][]`，约定为「上面一组放**全部非删除项**，最下面单独一组只放 `Delete`（`color: 'error'` + `i-lucide-trash-2`）」，两组之间即分隔线；不要把 Delete 和其它项混在同一组（`useBookmarkMenu` / `useFolderMenu` / `useNoteMenu` / `useExpenseMenu` / `useFileMenu` 都按此写）。
 - **跨父级移动的目标候选**：页面用 `buildFolderTree(data, item)` 算出文件夹树（只含文件夹、按层级嵌套、同级按 position），注入 `MoveFormModal`；「根级」是弹窗自己补在最前面的虚拟节点（`value: null`）。传进去的是即将被移动的那条记录，util 内部只剪掉**它自己**：子孙只在从被保留的节点往下递归时才被访问，所以天然进不来——不剪则会成环，`buildTree` 里成环的行都成不了 root，整棵子树从界面消失且再也点不到；服务端在 `move.put.ts` 里也会再拒一次。
 - **错误处理（fail loudly）**：`selfFetch` 已在全局统一弹出错误 toast，业务代码**不写 try/catch 包裹请求**；失败时异常自然传播（unhandled rejection 即预期表现），成功路径（emit/refresh/toast）不执行
@@ -167,9 +167,9 @@
 - **日期选择器 `DatePicker`（记账页 / 笔记页共用）**：`app/components/DatePicker.vue` 把 `UInputDate` + 尾部日历按钮 + `UPopover` + `UCalendar` 封成一个只收发 `YYYY-MM-DD` 字符串的组件，表单里写 `<DatePicker v-model="formState.xxx" />` 即可；`:reference` 用包住 `UInputDate` 的 `<div ref="dateField" class="inline-block">` 定位——不要用 `inputsRef[3]`（那是内部某一段，弹窗会压在输入框上），也不要用组件的 `$el`（实测弹出的位置跑到视口外）；`:content="{ side: 'right', align: 'start', sideOffset: 8 }"` 让日历弹在整个输入框右侧而不是正下方（空间不够时 Reka 会自动翻到左侧）。`UInputDate` 空值用 `null`、`UCalendar` 用 `undefined`，两种空值差异在组件内部各配一个 computed 消化掉、共用同一份字符串；日期对象来自 `@internationalized/date`（`UInputDate`/`UCalendar` 的 peer 依赖，已在 `dependencies` 声明）
 - 记账页的分组列表用 `UCard`：日期与小计放进 `#header`（`root` 的 `divide-y` 自动分隔 header 与 body）；`:ui` 里 `root: 'ring-inset'`、`body: 'p-0 divide-y divide-default'`（`divide-y` 落在 body 的直接子元素即各行上承接分隔线），header 的主题内边距（`p-4 sm:px-6`）按需覆盖——注意 `sm:px-*` 要单独再覆盖一次才会在 sm 断点生效，只写 `p-0` 会残留主题的 `sm:px-6`；`ring-inset` 则避免描边被滚动容器（`overflow-y-auto` 会把 `overflow-x` 连带变成 `auto`）裁掉。笔记页也按天分组用 `UCard`：header 放日期、body 用 `divide-y` 分隔当天的笔记行，`:ui` 与记账页同款（`root: 'ring-inset'`）。不要手写 `ring-default` / `bg-default` 这类语义色 class 去拼表面
 - `UTree` 没有拖拽能力（底层 Reka `TreeRoot` 亦无），排序只用右键菜单的移动项实现
-- **`UTree` 单选时 `modelValue` 收的是 item 对象本身**（Reka 内部用 `getKey` 比较，不比较引用），传对应节点对象进去就有主题默认的选中样式（`selected` 变体给的是 `before:bg-elevated` 底色 + `text-highlighted`，hover 还有 `hover:before:bg-elevated/50`）。选中样式统一由 `ui.link` 覆盖决定，两处不一样：书签页的树是导航，`treeLinkUi` 把底色和文字色一起去掉（`hover:text-inherit hover:before:bg-transparent before:bg-inherit text-inherit`）；移动弹窗是选择器，底色同样去掉，但**必须留一个选中标记**，所以多了 `aria-selected:text-primary`（选中行文字变主题色、其余行 `text-inherit`，悬停不上色以免和选中混淆）——`aria-selected` 是 UTree/Reka 打在节点上的，不需要额外 data 属性。两份 `ui` 各写一遍、不抽常量。**别把书签页那份里的 `linkTrailingIcon: 'hidden'` 抄进弹窗**：那是隐藏导航箭头的，选择器要靠箭头看展开/折叠
-- **点击 `UTree` 节点会同时触发选中与折叠/展开**（Reka `TreeItem` 的 onClick 先 select 再 toggle），没有单独的展开按钮。所以移动弹窗给有子节点的项设了 `defaultExpanded: true`，目标一次全部可见、点一下即可选中（这也意味着点父级会顺手折叠它）
-- **`UTree` 的 `get-key` 会被塞一个空对象**：Reka 用 `getKey(modelValue ?? {})` 探测「当前没有选中」，所以 `get-key` 必须对 `{}` 也安全——`bookmarks.vue` 写成 `String(menuBookmark(item)?.id)`。写成 `menuBookmark(item).id` 会在树挂载时抛 `Cannot read properties of undefined (reading 'id')`、**整页白屏**（这个坑真踩过一次：`String(undefined)` 无害，但多一层 `.id` 就不是了）
+- **`UTree` 单选时 `modelValue` 收的是 item 对象本身**（Reka 内部用 `getKey` 比较，不比较引用），传对应节点对象进去就有主题默认的选中样式（`selected` 变体给的是 `before:bg-elevated` 底色 + `text-highlighted`，hover 还有 `hover:before:bg-elevated/50`）。选中样式统一由 `ui.link` 覆盖决定，两处不一样：书签页的树是导航，`treeLinkUi` 把底色和文字色一起去掉（`hover:text-inherit hover:before:bg-transparent before:bg-inherit text-inherit`）；移动弹窗是选择器，底色同样去掉，但**必须留一个选中标记**，所以多了 `aria-selected:text-primary`（选中行文字变主题色、其余行 `text-inherit`，悬停不上色以免和选中混淆）——`aria-selected` 是 UTree/Reka 打在节点上的，不需要额外 data 属性。两份 `ui` 各写一遍、不抽常量。书签页隐藏 `linkTrailingIcon` 是去掉导航箭头；移动弹窗也隐藏它，因为那棵树不折叠（见下一条）
+- **点击 `UTree` 节点会同时触发选中与折叠/展开**（Reka `TreeItem` 的 onClick 先 select 再 toggle），没有单独的展开按钮。移动弹窗那棵树只用来选目标：把 `expanded` 做成**受控值**（`collectExpanded` 收集所有文件夹的 key），点击时 Reka 发出的 `update:expanded` 不采纳，所以**点一下只选中、不会折叠**，所有文件夹保持展开；再配 `ui.linkTrailingIcon: 'hidden'` 隐藏展开/折叠箭头。另外单选默认 `selectionBehavior: 'toggle'`（重复点同一项会取消选中）——那会造成「高亮没了、但 `formState.target` 还留着」的不一致，所以移动弹窗设 `selection-behavior="replace"`，点同一个文件夹仍保持选中
+- **`UTree` 的 `get-key` 会被塞一个空对象**：Reka 用 `getKey(modelValue ?? {})` 探测「当前没有选中」，所以 `get-key` 必须对 `{}` 也安全——`bookmarks.vue` 写成 `String(item.id)`（`String(undefined)` 无害）。**不要在 `get-key` 里对节点做多一层取值**（如 `item.xxx.id`）：`{}` 上没有 `xxx`，会在树挂载时抛 `Cannot read properties of undefined`、**整页白屏**（这个坑真踩过一次）
 - **`UDropdownMenu` 的 item 带 `children` 就渲染成二级菜单**（内部是 `DropdownMenu.Sub` / `SubTrigger`，自带右侧箭头，`SubTrigger` 上的 `disabled` 会连子菜单一起禁用，子项的 `onSelect` 照常生效）。鼠标悬停由 `pointermove` + 100ms 定时器触发打开；`UContextMenu` 走的是同一个 content 组件，所以右键菜单里也能用子菜单
 - **弹窗尺寸按需在实例上写 `ui`**：`UModal` 没有 `size` 之类的 prop，宽度只能由 `ui.content` 覆盖（主题默认 `max-w-lg`，512px）；表单/上传/删除弹窗都用默认值，移动弹窗传 `:ui="{ content: 'max-w-2xl' }"`（672px，候选树宽一点更好读）、笔记的新建/编辑弹窗传 `max-w-4xl`（896px，长文输入更舒服）。移动弹窗的候选树容器是 `max-h-96`（384px）：候选树是整棵展开的（本地数据实测内容高约 1100px），再高会顶到弹窗自身的视口上限，超出部分由容器自己滚动。`ui.content` 与主题里的 `max-w-lg` 冲突由 tailwind-merge 解决，主题的 `bg-default` / `rounded-lg` / `ring` 等类都保留
 - Toast 通过 Nuxt UI 的 `useToast()` composable 调用，没有直接渲染 `UToast` 组件

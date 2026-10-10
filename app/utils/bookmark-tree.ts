@@ -10,28 +10,17 @@ export function sortBookmarks<T extends { parentId: number | null, type: string,
   })
 }
 
-export function buildTree<T extends { id: string | number | undefined, parentId: string | number | null | undefined }>(list: T[]): (T & { children: T[] })[] {
-  if (list.length === 0)
-    return []
-
+export function buildTree<T extends { id: string | number, parentId: string | number | null }>(list: T[]): (T & { children: T[] })[] {
   const map = new Map<string | number, T & { children: T[] }>()
-  for (const item of list) {
-    if (item.id == null)
-      continue
+  for (const item of list)
     map.set(item.id, { ...item, children: [] })
-  }
 
   const roots: (T & { children: T[] })[] = []
   for (const item of list) {
-    if (item.id == null)
-      continue
-    const node = map.get(item.id)
-    if (!node)
-      continue
-    if (item.parentId == null || !map.has(item.parentId))
-      roots.push(node)
+    if (item.parentId == null)
+      roots.push(map.get(item.id)!)
     else
-      map.get(item.parentId)!.children.push(node)
+      map.get(item.parentId)!.children.push(map.get(item.id)!)
   }
 
   return roots

@@ -1,9 +1,4 @@
-import type { DropdownMenuItem, TreeItem } from '@nuxt/ui'
-
-// 树节点把原始记录挂在 _bookmark 上（见 useBookmarks.toTreeItem），菜单和页面都从它取。
-export function menuBookmark(item: TreeItem): Bookmark {
-  return (item as TreeItem & { _bookmark: Bookmark })._bookmark
-}
+import type { DropdownMenuItem } from '@nuxt/ui'
 
 // 四个同级移动项结构完全一样，只有方向、文案和图标不同。
 // 文案是「Move 之下」的简写：一级已经叫 Move 了，子项再写 Move Up 会重复。

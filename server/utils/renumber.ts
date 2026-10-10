@@ -1,5 +1,5 @@
 import { db, schema } from '@nuxthub/db'
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { and, sql } from 'drizzle-orm'
 
 /**
  * 构造「把同一 (parentId, type) 分组的 position 按 orderedIds 顺序重写为 1..n」的更新语句。
@@ -21,8 +21,7 @@ export function renumberGroupQuery(
       position: sql`(select cast(je.key as integer) + 1 from json_each(${idsJson}) as je where cast(je.value as integer) = ${schema.bookmarks.id})`,
     })
     .where(and(
-      eq(schema.bookmarks.type, type),
-      parentId === null ? isNull(schema.bookmarks.parentId) : eq(schema.bookmarks.parentId, parentId),
+      groupWhere(type, parentId),
       sql`${schema.bookmarks.id} in (select cast(value as integer) from json_each(${idsJson}))`,
     ))
 }

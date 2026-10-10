@@ -2,7 +2,6 @@
 import type { FormError } from '@nuxt/ui'
 
 const props = defineProps<{
-  mode: 'create' | 'edit'
   parentId?: number
   item?: Bookmark | null
 }>()
@@ -14,7 +13,9 @@ const emit = defineEmits<{
 
 const open = defineModel<boolean>('open', { required: true })
 
-const title = computed(() => props.mode === 'create' ? 'New Folder' : 'Edit Folder')
+// item 为空就是新增、有值就是编辑，不需要额外的 mode
+const isEdit = computed(() => !!props.item)
+const title = computed(() => isEdit.value ? 'Edit Folder' : 'New Folder')
 
 const formState = reactive({
   name: '',
@@ -24,17 +25,13 @@ const submitting = ref(false)
 const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')
 
 watch(open, (isOpen) => {
-  if (isOpen) {
-    if (props.mode === 'edit' && props.item)
-      formState.name = props.item.name
-    else
-      formState.name = ''
-  }
+  if (isOpen)
+    formState.name = props.item?.name ?? ''
 })
 
 function validate(state: typeof formState): FormError<string>[] {
   const errors: FormError<string>[] = []
-  if (!state.name)
+  if (!state.name.trim())
     errors.push({ name: 'name', message: 'Name is required' })
   return errors
 }
@@ -44,31 +41,24 @@ async function handleSubmit() {
     return
   submitting.value = true
   try {
-    if (props.mode === 'create') {
-      const body: Pick<InsertBookmark, 'type' | 'name' | 'parentId'> = {
-        type: 'folder',
-        name: formState.name,
-        parentId: props.parentId,
-      }
-
-      await selfFetch('/api/bookmarks', {
-        method: 'POST',
-        body,
-      })
-
-      emit('created')
-      open.value = false
-    }
-    else {
+    if (isEdit.value) {
       await selfFetch(`/api/bookmarks/${props.item!.id}`, {
         method: 'PUT',
         // 编辑只提交可改字段：type / parentId / position 由服务端保持不变
         body: { name: formState.name },
       })
-
       emit('updated')
-      open.value = false
     }
+    else {
+      const body: Pick<InsertBookmark, 'type' | 'name' | 'parentId'> = {
+        type: 'folder',
+        name: formState.name,
+        parentId: props.parentId,
+      }
+      await selfFetch('/api/bookmarks', { method: 'POST', body })
+      emit('created')
+    }
+    open.value = false
   }
   finally {
     submitting.value = false
@@ -88,7 +78,7 @@ async function handleSubmit() {
     <template #footer>
       <div class="flex justify-end gap-2 w-full">
         <UButton @click="formRef?.submit()">
-          {{ mode === 'create' ? 'Create' : 'Save' }}
+          {{ isEdit ? 'Save' : 'Create' }}
         </UButton>
       </div>
     </template>

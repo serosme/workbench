@@ -1,15 +1,14 @@
-import type { DropdownMenuItem, TreeItem } from '@nuxt/ui'
-import { menuBookmark, moveMenuItem } from '~/utils/bookmark-menu'
+import type { DropdownMenuItem } from '@nuxt/ui'
+import { moveMenuItem } from '~/utils/bookmark-menu'
 
 export function useFolderMenu(
   bookmarkForm: ReturnType<typeof useBookmarkForm>,
-  folderForm: ReturnType<typeof useFolderForm>,
+  folderForm: ReturnType<typeof useBookmarkForm>,
   moveForm: ReturnType<typeof useMoveForm>,
   remove: (id: number) => Promise<void>,
   reorder: ReturnType<typeof useReorderBookmarks>,
 ) {
-  function getMenu(item: TreeItem): DropdownMenuItem[][] {
-    const b = menuBookmark(item)
+  function getMenu(b: Bookmark): DropdownMenuItem[][] {
     // 所有非删除项放上面一组；Delete 单独放最下一组（菜单分节统一约定，见 AGENTS.md）
     return [
       [

@@ -1,5 +1,5 @@
 import { db, schema } from '@nuxthub/db'
-import { and, eq, isNull } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'))
@@ -15,10 +15,12 @@ export default defineEventHandler(async (event) => {
   // 删除后把同组剩余项按当前顺序整段重编号为 1..n，维持「组内 position 连续」不变式，
   // 同时自愈历史数据可能存在的间隙与重复值。
   const { parentId, type } = bookmark
-  const siblings = await db.select().from(schema.bookmarks).where(and(
-    eq(schema.bookmarks.type, type),
-    parentId === null ? isNull(schema.bookmarks.parentId) : eq(schema.bookmarks.parentId, parentId),
-  )).orderBy(schema.bookmarks.position).all()
+  const siblings = await db
+    .select()
+    .from(schema.bookmarks)
+    .where(groupWhere(type, parentId))
+    .orderBy(schema.bookmarks.position)
+    .all()
 
   const remainingIds = siblings.filter(s => s.id !== id).map(s => s.id)
   // remainingIds 为空时 json_each('[]') 匹配不到任何行，重编号语句是天然的空操作。
