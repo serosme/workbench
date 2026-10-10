@@ -9,14 +9,26 @@ export function useBookmarkMenu(
 ) {
   function getMenu(item: TreeItem): DropdownMenuItem[][] {
     const b = menuBookmark(item)
-    const items: DropdownMenuItem[][] = [
-      [moveMenuItem(b, reorder, moveForm)],
+    const actions: DropdownMenuItem[] = []
+
+    const url = b.url
+    if (url) {
+      actions.push({
+        label: 'Open in New Tab',
+        icon: 'i-lucide-external-link',
+        onSelect() { navigateTo(url, { external: true, open: { target: '_blank' } }) },
+      })
+    }
+    actions.push(moveMenuItem(b, reorder, moveForm))
+    actions.push({
+      label: 'Edit',
+      icon: 'i-lucide-pencil',
+      onSelect() { bookmarkForm.openEdit(b) },
+    })
+
+    return [
+      actions,
       [
-        {
-          label: 'Edit',
-          icon: 'i-lucide-pencil',
-          onSelect() { bookmarkForm.openEdit(b) },
-        },
         {
           label: 'Delete',
           icon: 'i-lucide-trash-2',
@@ -25,17 +37,6 @@ export function useBookmarkMenu(
         },
       ],
     ]
-    const url = b.url
-    if (url) {
-      items.unshift([
-        {
-          label: 'Open in New Tab',
-          icon: 'i-lucide-external-link',
-          onSelect() { navigateTo(url, { external: true, open: { target: '_blank' } }) },
-        },
-      ])
-    }
-    return items
   }
 
   return { getMenu }

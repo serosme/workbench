@@ -10,6 +10,7 @@ export function useFolderMenu(
 ) {
   function getMenu(item: TreeItem): DropdownMenuItem[][] {
     const b = menuBookmark(item)
+    // 所有非删除项放上面一组；Delete 单独放最下一组（菜单分节统一约定，见 AGENTS.md）
     return [
       [
         {
@@ -22,14 +23,14 @@ export function useFolderMenu(
           icon: 'i-lucide-bookmark-plus',
           onSelect() { bookmarkForm.openCreate(b.id) },
         },
-      ],
-      [moveMenuItem(b, reorder, moveForm)],
-      [
+        moveMenuItem(b, reorder, moveForm),
         {
           label: 'Edit',
           icon: 'i-lucide-pencil',
           onSelect() { folderForm.openEdit(b) },
         },
+      ],
+      [
         {
           label: 'Delete',
           icon: 'i-lucide-trash-2',
