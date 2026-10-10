@@ -23,8 +23,6 @@ const treeLinkUi = {
 const contextBookmark = ref<TreeItem>()
 const contextIsLeft = ref(true)
 const contextMenuItems = computed(() => getMenu(contextBookmark.value, contextIsLeft.value))
-let nodeToken = 0
-const nodes = new Map<string, TreeItem>()
 
 function getMenu(item: TreeItem | undefined, left: boolean): DropdownMenuItem[][] {
   if (!item) {
@@ -40,26 +38,40 @@ function getMenu(item: TreeItem | undefined, left: boolean): DropdownMenuItem[][
 
 function withContextTokens(items: TreeItem[]): TreeItem[] {
   return items.map((item) => {
-    const token = `bookmark-node-${nodeToken++}`
-    nodes.set(token, item)
+    // token 用节点 id（天然唯一），右键时据此反查，无需额外的 Map
+    const token = `bookmark-node-${menuBookmark(item).id}`
     return { ...item, class: `${item.class ?? ''} ${token}`.trim(), ...(item.children ? { children: withContextTokens(item.children) } : {}) }
   })
 }
 
+function findNode(items: TreeItem[], id: number): TreeItem | undefined {
+  for (const item of items) {
+    if (menuBookmark(item)?.id === id)
+      return item
+    if (item.children) {
+      const found = findNode(item.children, id)
+      if (found)
+        return found
+    }
+  }
+}
+
+const contextLeftTree = computed<TreeItem[]>(() => withContextTokens(leftTree.value))
+const contextRightTree = computed<TreeItem[]>(() => withContextTokens(rightTree.value))
+
 function openContextMenu(event: MouseEvent, left: boolean) {
   contextIsLeft.value = left
   const link = (event.target as HTMLElement).closest('[data-slot="link"]')
-  const token = link?.className.match(/bookmark-node-\d+/)?.[0]
-  contextBookmark.value = token ? nodes.get(token) : undefined
+  const id = Number(link?.className.match(/bookmark-node-(\d+)/)?.[1])
+  contextBookmark.value = Number.isInteger(id)
+    ? findNode(left ? contextLeftTree.value : contextRightTree.value, id)
+    : undefined
 }
 
 // UTree 会拿一个空对象来探测 key（Reka 内部是 `getKey(modelValue ?? {})`），所以这里不能假设收到的都是真节点。
 function getItemKey(item: TreeItem): string {
   return String(menuBookmark(item)?.id)
 }
-
-const contextLeftTree = computed<TreeItem[]>(() => withContextTokens(leftTree.value))
-const contextRightTree = computed<TreeItem[]>(() => withContextTokens(rightTree.value))
 </script>
 
 <template>
