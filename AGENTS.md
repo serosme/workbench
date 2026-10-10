@@ -155,6 +155,7 @@
 ## Nuxt UI
 
 - 图标使用 `@iconify-json/lucide` 集，格式如 `i-lucide-*`
+- 主题定制入口为 `app/app.config.ts`（`defineAppConfig`，当前为空）
 - 项目实际使用的组件：`UApp`、`UModal`、`UForm`、`UTree`、`UDropdownMenu`、`UContextMenu`、`UInput`、`UInputDate`、`UTextarea`、`UCard`、`UScrollArea`、`UButton`、`UFormField`、`UAuthForm`、`UPopover`、`UCalendar`
 - **记账页的日期选择器**：`UInputDate` 负责显示/键入，尾部 `#trailing` 放日历图标按钮触发 `UPopover`，`#content` 里是 `UCalendar`，选完自动 `close`；`UPopover` 的 `:reference` 借 `UInputDate` 暴露的 `inputsRef[3]?.$el` 定位（同官方 date picker 示例），取不到时回退到按钮本身。两个组件的空值类型不同（`UInputDate` 用 `null`、`UCalendar` 用 `undefined`），所以表单里各配一个 computed、共用同一份 `YYYY-MM-DD` 字符串；日期对象来自 `@internationalized/date`（`UInputDate`/`UCalendar` 的 peer 依赖，已在 `dependencies` 声明）
 - **`UScrollArea` 的 `virtualize` 需要自己的高度**：它自带 `overflow-y-auto`（主题的 root 槽），页面里必须给定高度（笔记页是外层 `h-screen` + 子元素 `h-full`），否则没有滚动容器、虚拟列表量不出视口。`items` 传数组、用默认插槽的 `{ item }` 渲染，虚拟化分支下每项是绝对定位的 `data-slot="item"` 包装，槽里的内容决定实际高度；`@tanstack/vue-virtual` 是 `@nuxt/ui` 自己的依赖，不需要在 package.json 里再声明
