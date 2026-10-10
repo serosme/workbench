@@ -10,7 +10,7 @@
 
 - **F1 登录**：单用户密码（环境变量 `NUXT_AUTH_PASSWORD`，即 `runtimeConfig.authPassword`）；校验通过后用 Nuxt 4.6 的 `useSession`（`nuxt/server`）写入 `nuxt-session` cookie（默认 httpOnly/secure/sameSite=lax，maxAge 1 天），密封用 Nuxt 的应用密钥 `NUXT_APP_SECRET`（≥32 字符，session 内部经 `deriveSecret` 读取）；除 `/api/auth/` 外所有 API 由 `server/middleware/auth.ts` 用 `getSession` 校验；CSRF 防护依赖该 cookie 的 `sameSite=lax`（跨站 POST 不带 cookie），不要改成 `none`。
 - **F2 书签数据**：一次拉全量，`sortBookmarks` 排序后 `buildTree` 组成单树——文件夹在上（各带子书签），根级书签按 position 落在最下边。
-- **F3 双栏与节点菜单**：节点右键打开操作菜单，节点链接隐藏默认尾随箭头；左栏（35%）是书签树、右栏（65%）预留给 Chat；书签树区域铺满高度、空白处右键新建（文件夹/书签），无底部新建虚拟项。
+- **F3 双栏与节点菜单**：节点右键打开操作菜单，节点链接隐藏默认尾随箭头；左栏（35%）是书签树、右栏（65%）是 Chat（`ChatPanel`）；书签树区域铺满高度、空白处右键新建（文件夹/书签），无底部新建虚拟项。
 - **F4 新建/编辑**：书签、文件夹各一个 create/edit 双模式弹窗；新建位置由服务端在 `POST /api/bookmarks` 计算（见「排序模型」），提交带 `submitting` 守卫防重复提交。
 - **F5 删除**：非空文件夹拒绝删除；删除后同组剩余项整段重编号。
 - **F6 移动**：Up / Down（同级一步）、To Top / To Bottom（同级首尾，整组一次重编号）、To Folder（跨父级，`MoveFormModal` 选目标父级，落到目标分组末尾）收在节点菜单的 **Move 二级菜单**里；分组首尾时对应子项 disabled，请求在途时整个 Move 菜单 disabled。
@@ -19,15 +19,16 @@
 - **F9 数据库**：见「数据库」；**F10 部署/备份**：见「部署」；**F11 文件**：见「文件存储」；**F12 工程配置与技能**：见「命令」「约束」「项目技能」。
 - **F13 笔记**：每条笔记含标题（`title`）、正文（`content`）与书写日期（`writtenAt`，表单默认今天、可改）；`/notes` 是居中单列的卡片列表（四周留白由默认布局给），按书写日期倒序分组——每天一张 `UCard`（header 是日期、body 是当天笔记，行只显示标题），组顺序与组内顺序都来自服务端；空白处右键新建（无独立按钮），行左键进编辑、右键编辑/删除（无只读详情弹窗），删除不弹确认框；卡片样式见「Nuxt UI」。
 - **F14 记账**：`/expenses` 是仅含「消费日期 / 金额 / 消费内容」三项的流水列表，按 `spentAt` 倒序，先按月分段（每月一张 `UCard` 显示该月合计），月内再按本地日期分成多张 `UCard`（header 显示日期与小计，body 是当天流水行）；消费只精确到天，表单用 `DatePicker` 选日期（存当天本地零点的毫秒时间戳）；金额以整数「分」存储（`amount`），界面出入都经 `formatAmount` / `parseAmount` 换算，不做元的浮点运算；空白处右键新建，行左键进编辑、右键编辑/删除，删除不弹确认框；滚动区 `h-full overflow-y-auto` 并用 Tailwind 内置的 `scrollbar-none` 隐藏滚动条，外层留白由默认布局给）。
+- **F15 Chat**：书签页右栏是 `ChatPanel`（`useChat`（`@ai-sdk/vue`）+ `DefaultChatTransport`（`ai`）驱动 `POST /api/chat` 流式）。可选模型不向 provider 拉取，由环境变量 `NUXT_PUBLIC_CHAT_MODELS`（`{ label, value }` 的 JSON 数组）配置（即 `runtimeConfig.public.chatModels`，`nuxt.config.ts` 里只留空数组占位；示例见 `.env.example`）。`POST /api/chat` 用 `@ai-sdk/openai-compatible` 的 `streamText`，带 `getTime` 工具（`server/utils/ai-tools/`）和 `smoothStream`（`Intl.Segmenter('zh')` 按词平滑）；assistant 文本用 `@comark/nuxt` 的 `<Markdown>` 渲染（用户文本仍为纯文本）。provider 走 `runtimeConfig.chatBaseUrl` / `chatApiKey`（env `NUXT_CHAT_BASE_URL` / `NUXT_CHAT_API_KEY`，nuxt.config 不留默认值）。没有消息时右栏显示 `ChatPlaceholder`（打字机输出的假「思考」+「服务器繁忙，请稍后重试。」），有真实消息后切换为真实对话。移植注意事项集中在根目录 `CHAT-PORT-NOTES.md`。
 
 ## 目录职责
 
-- `app/pages/`：`bookmarks.vue`（书签树 + 预留 Chat 区，35/65 分栏）、`files.vue`（文件树 + 预览区）、`notes.vue`（单列卡片列表）、`expenses.vue`（记账流水）、`login.vue`；`index.vue` 重定向 `/bookmarks`（`nuxt.config.ts` 的 routeRules 同款）。
+- `app/pages/`：`bookmarks.vue`（书签树 + Chat，35/65 分栏）、`files.vue`（文件树 + 预览区）、`notes.vue`（单列卡片列表）、`expenses.vue`（记账流水）、`login.vue`；`index.vue` 重定向 `/bookmarks`（`nuxt.config.ts` 的 routeRules 同款）。
 - `app/layouts/`：`default.vue`（页面外壳：满高 + 四边留白 + 统一渲染 `PageNav`）；`app.vue` 用 `<NuxtLayout>` 包 `<NuxtPage>`。
-- `app/components/`：`FileTree`、`FileUploadModal`、`BookmarkFormModal`、`FolderFormModal`、`MoveFormModal`、`NoteFormModal`、`ExpenseFormModal`、`PageNav`、`LoginForm`。
+- `app/components/`：`FileTree`、`FileUploadModal`、`BookmarkFormModal`、`FolderFormModal`、`MoveFormModal`、`NoteFormModal`、`ExpenseFormModal`、`ChatPanel`、`ChatPlaceholder`、`PageNav`、`LoginForm`。
 - `app/composables/`：数据 `useBookmarks` / `useFiles` / `useNotes` / `useExpenses`，弹窗状态 `*Form`，删除 `useDelete*`，排序 `useReorderBookmarks`，右键菜单 `*Menu`，各自独立、互不混合。
 - `app/utils/`：`selfFetch` / `useSelfFetch`（请求与错误）、`bookmark-tree`（排序/组树）、`bookmark-menu`（书签与文件夹共用的 Move 子菜单）、`money`（分与元的换算）、`datetime`（日期/月份显示格式、「YYYY-MM-DD」↔ 当天零点毫秒时间戳的互转）。
-- `server/`：`api/{auth,bookmarks,files,notes,expenses}`、`utils/{renumber,bookmark-group,blob-files,blob-tree}`、`db/schema.ts` 与 `db/migrations/sqlite/`。
+- `server/`：`api/{auth,bookmarks,chat,files,notes,expenses}`、`utils/{renumber,bookmark-group,blob-files,blob-tree,ai-tools}`、`db/schema.ts` 与 `db/migrations/sqlite/`。
 - `shared/types/`：前后端共享类型（`db.ts`、`files.ts`）。
 
 ## 命令
@@ -163,7 +164,7 @@
 - 图标使用 `@iconify-json/lucide` 集，格式如 `i-lucide-*`
 - 主题定制入口为 `app/app.config.ts`（`defineAppConfig`）；当前只覆写一处：`ui.formField.slots.error = 'hidden'`（见下）
 - **表单校验不显示报错文字**：`UFormField` 的报错 div 只在出错时渲染（`FormField.vue` 里 `data-slot="error"` 的 `v-if`），出现/消失会撑高弹窗、输入时来回跳动。所以在 `app.config.ts` 里把 `ui.formField.slots.error` 覆写成 `'hidden'`：`validate` 照旧拦截提交、无效字段照旧变红（`useFormField` 的 `color: 'error'`/`highlight`），只是不再显示文字，必填只靠 `required` 的星号。新增表单不用再单独处理
-- 项目实际使用的组件：`UApp`、`UModal`、`UForm`、`UTree`、`UDropdownMenu`、`UContextMenu`、`UInput`、`UInputDate`、`UTextarea`、`UCard`、`UButton`、`UFormField`、`UAuthForm`、`UPopover`、`UCalendar`；另有项目组件 `DatePicker`（包 `UInputDate` + `UPopover` + `UCalendar`，见下）
+- 项目实际使用的组件：`UApp`、`UModal`、`UForm`、`UTree`、`UDropdownMenu`、`UContextMenu`、`UInput`、`UInputDate`、`UTextarea`、`UCard`、`UButton`、`UFormField`、`UAuthForm`、`UPopover`、`UCalendar`、`USelect`、`UChatMessages`、`UChatPrompt`、`UChatPromptSubmit`、`UChatReasoning`、`UChatTool`；另有项目组件 `DatePicker`（包 `UInputDate` + `UPopover` + `UCalendar`，见下）
 - **日期选择器 `DatePicker`（记账页 / 笔记页共用）**：`app/components/DatePicker.vue` 把 `UInputDate` + 尾部日历按钮 + `UPopover` + `UCalendar` 封成一个只收发 `YYYY-MM-DD` 字符串的组件，表单里写 `<DatePicker v-model="formState.xxx" />` 即可；`:reference` 用包住 `UInputDate` 的 `<div ref="dateField" class="inline-block">` 定位——不要用 `inputsRef[3]`（那是内部某一段，弹窗会压在输入框上），也不要用组件的 `$el`（实测弹出的位置跑到视口外）；`:content="{ side: 'right', align: 'start', sideOffset: 8 }"` 让日历弹在整个输入框右侧而不是正下方（空间不够时 Reka 会自动翻到左侧）。`UInputDate` 空值用 `null`、`UCalendar` 用 `undefined`，两种空值差异在组件内部各配一个 computed 消化掉、共用同一份字符串；日期对象来自 `@internationalized/date`（`UInputDate`/`UCalendar` 的 peer 依赖，已在 `dependencies` 声明）
 - 记账页的分组列表用 `UCard`：日期与小计放进 `#header`（`root` 的 `divide-y` 自动分隔 header 与 body）；`:ui` 里 `root: 'ring-inset'`、`body: 'p-0 divide-y divide-default'`（`divide-y` 落在 body 的直接子元素即各行上承接分隔线），header 的主题内边距（`p-4 sm:px-6`）按需覆盖——注意 `sm:px-*` 要单独再覆盖一次才会在 sm 断点生效，只写 `p-0` 会残留主题的 `sm:px-6`；`ring-inset` 则避免描边被滚动容器（`overflow-y-auto` 会把 `overflow-x` 连带变成 `auto`）裁掉。笔记页也按天分组用 `UCard`：header 放日期、body 用 `divide-y` 分隔当天的笔记行，`:ui` 与记账页同款（`root: 'ring-inset'`）。不要手写 `ring-default` / `bg-default` 这类语义色 class 去拼表面
 - `UTree` 没有拖拽能力（底层 Reka `TreeRoot` 亦无），排序只用右键菜单的移动项实现

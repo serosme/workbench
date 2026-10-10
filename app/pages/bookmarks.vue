@@ -56,17 +56,17 @@ function getItemKey(item: TreeItem): string {
 
 <template>
   <div class="flex h-full">
-    <!-- 左：书签树（文件夹在上，根级书签落在最下边） -->
     <aside class="flex h-full min-w-0 flex-col pr-6" style="width: 35%">
       <UContextMenu :items="contextMenuItems" class="block min-h-0 flex-1">
         <div class="h-full min-h-32 overflow-y-auto scrollbar-none" @contextmenu="openContextMenu">
-          <UTree :items="contextTree" :get-key="getItemKey" :ui="treeLinkUi" />
+          <UTree :items="contextTree" :get-key="getItemKey" :ui="treeLinkUi" size="xl" />
         </div>
       </UContextMenu>
     </aside>
 
-    <!-- 右：预留给 Chat -->
-    <section class="h-full min-w-0 flex-1 border-l border-default pl-6" />
+    <section class="h-full min-w-0 flex-1 border-l border-default pl-6">
+      <ChatPanel />
+    </section>
 
     <BookmarkFormModal
       v-model:open="bookmarkForm.modal.open"
