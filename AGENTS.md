@@ -158,7 +158,8 @@
 ## Nuxt UI
 
 - 图标使用 `@iconify-json/lucide` 集，格式如 `i-lucide-*`
-- 主题定制入口为 `app/app.config.ts`（`defineAppConfig`，当前为空）
+- 主题定制入口为 `app/app.config.ts`（`defineAppConfig`）；当前只覆写一处：`ui.formField.slots.error = 'hidden'`（见下）
+- **表单校验不显示报错文字**：`UFormField` 的报错 div 只在出错时渲染（`FormField.vue` 里 `data-slot="error"` 的 `v-if`），出现/消失会撑高弹窗、输入时来回跳动。所以在 `app.config.ts` 里把 `ui.formField.slots.error` 覆写成 `'hidden'`：`validate` 照旧拦截提交、无效字段照旧变红（`useFormField` 的 `color: 'error'`/`highlight`），只是不再显示文字，必填只靠 `required` 的星号。新增表单不用再单独处理
 - 项目实际使用的组件：`UApp`、`UModal`、`UForm`、`UTree`、`UDropdownMenu`、`UContextMenu`、`UInput`、`UInputDate`、`UTextarea`、`UCard`、`UButton`、`UFormField`、`UAuthForm`、`UPopover`、`UCalendar`；另有项目组件 `DatePicker`（包 `UInputDate` + `UPopover` + `UCalendar`，见下）
 - **日期选择器 `DatePicker`（记账页 / 笔记页共用）**：`app/components/DatePicker.vue` 把 `UInputDate` + 尾部日历按钮 + `UPopover` + `UCalendar` 封成一个只收发 `YYYY-MM-DD` 字符串的组件，表单里写 `<DatePicker v-model="formState.xxx" />` 即可；`:reference` 用包住 `UInputDate` 的 `<div ref="dateField" class="inline-block">` 定位——不要用 `inputsRef[3]`（那是内部某一段，弹窗会压在输入框上），也不要用组件的 `$el`（实测弹出的位置跑到视口外）；`:content="{ side: 'right', align: 'start', sideOffset: 8 }"` 让日历弹在整个输入框右侧而不是正下方（空间不够时 Reka 会自动翻到左侧）。`UInputDate` 空值用 `null`、`UCalendar` 用 `undefined`，两种空值差异在组件内部各配一个 computed 消化掉、共用同一份字符串；日期对象来自 `@internationalized/date`（`UInputDate`/`UCalendar` 的 peer 依赖，已在 `dependencies` 声明）
 - 记账页的分组列表用 `UCard`：日期与小计放进 `#header`（`root` 的 `divide-y` 自动分隔 header 与 body）；`:ui` 里 `root: 'ring-inset'`、`body: 'p-0 divide-y divide-default'`（`divide-y` 落在 body 的直接子元素即各行上承接分隔线），header 的主题内边距（`p-4 sm:px-6`）按需覆盖——注意 `sm:px-*` 要单独再覆盖一次才会在 sm 断点生效，只写 `p-0` 会残留主题的 `sm:px-6`；`ring-inset` 则避免描边被滚动容器（`overflow-y-auto` 会把 `overflow-x` 连带变成 `auto`）裁掉。笔记页也按天分组用 `UCard`：header 放日期、body 用 `divide-y` 分隔当天的笔记行，`:ui` 与记账页同款（`root: 'ring-inset'`）。不要手写 `ring-default` / `bg-default` 这类语义色 class 去拼表面
