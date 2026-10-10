@@ -46,7 +46,7 @@
 
 - 包管理器为 `pnpm`（锁定在 pnpm-lock.yaml，workspace 配置在 pnpm-workspace.yaml）
 - `pnpm-workspace.yaml` 启用 `trustPolicy: no-downgrade`：Nuxt 4.6 的 `@nuxt/vite-builder` 依赖 `cssnano ^9.2.2`，而 cssnano 9 / postcss-* 家族换发布流程后只剩 provenance、没有 npm trusted-publisher 证据，会被该策略判为 trust downgrade 并中断安装，故在 `trustPolicyExclude` 里按包名（`cssnano*`、`postcss-*`、`stylehacks`、`css-declaration-sorter`）排除；以后升级这些包若再报 `ERR_PNPM_TRUST_DOWNGRADE`，按同样方式补排除项
-- `pnpm dev` 启动后支持 HMR，修改前端代码无需重新构建或重启
+- `pnpm dev` 启动后支持 HMR，修改前端代码无需重新构建或重启；脚本带 `--no-tui`，关掉 Nuxt 4.6（`@nuxt/cli` 4.x）的 `dev` 默认交互式 TUI，改用普通流式日志（临时想看 TUI 可直接跑 `nuxt dev`）
 - 本地密钥配置在 `.env`（已被 gitignore，模板见 `.env.example`）：`NUXT_AUTH_PASSWORD`（登录密码）与 `NUXT_APP_SECRET`（≥32 字符随机串，Nuxt 应用密钥，用于密封 session）
 - 无测试框架，无 CI 配置
 

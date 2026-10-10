@@ -7,7 +7,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "generate:db": "nuxt db generate",
-    "dev": "nuxt dev",
+    "dev": "nuxt dev --no-tui",
     "preview": "nuxt preview",
     "build": "nuxt build",
     "backup": "wrangler d1 export DB --remote --output ./db.sql",
