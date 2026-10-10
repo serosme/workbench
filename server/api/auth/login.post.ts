@@ -10,6 +10,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ status: 400, message: 'Wrong password' })
   }
 
-  const session = await useSession<{ authed: boolean }>(event, { maxAge: 60 * 60 * 24 })
+  // sameSite 保持 lax：跨站 POST 不带 cookie，是本项目 CSRF 防护的关键，不要改成 'none'
+  const session = await useSession<{ authed: boolean }>(event, {
+    maxAge: 60 * 60 * 24,
+    cookie: { sameSite: 'lax' },
+  })
   await session.update({ authed: true })
 })
