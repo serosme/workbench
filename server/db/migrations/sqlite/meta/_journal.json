@@ -22,6 +22,20 @@
       "when": 1791463263405,
       "tag": "0002_fast_goblin_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1791594198911,
+      "tag": "0003_eager_doctor_faustus",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1791596400000,
+      "tag": "0004_written_at",
+      "breakpoints": true
     }
   ]
 }

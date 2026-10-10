@@ -1,6 +1,6 @@
 # Workbench Agent Instructions
 
-个人自用的 Nuxt 4 书签、文件、笔记与记账应用：单用户密码登录，书签页为左右双树，文件页为文件树 + 预留预览区，笔记页为瀑布流卡片，记账页为按天分组的流水列表；书签节点及空白区域、文件树节点及空白区域、笔记卡片及空白区域、记账行及空白区域均通过右键打开上下文菜单。
+个人自用的 Nuxt 4 书签、文件、笔记与记账应用：单用户密码登录，书签页为左右双树，文件页为文件树 + 预留预览区，笔记页为单列笔记卡片列表，记账页为按天分组的流水列表；书签节点及空白区域、文件树节点及空白区域、笔记卡片及空白区域、记账行及空白区域均通过右键打开上下文菜单。
 
 技术栈：Nuxt 4、Nuxt UI v4、Nuxt Hub、Drizzle ORM + SQLite/Cloudflare D1、Tailwind CSS v4、TypeScript 6。个人自用、单用户、单浏览器。
 
@@ -17,12 +17,12 @@
 - **F7 排序位置模型**：见「前端架构约定」的「排序模型」「重编号实现」。
 - **F8 请求与错误**：`selfFetch` 请求错误弹英文 toast，401 跳登录；`useSelfFetch` 是其 `useFetch` 封装。
 - **F9 数据库**：见「数据库」；**F10 部署/备份**：见「部署」；**F11 文件**：见「文件存储」；**F12 工程配置与技能**：见「命令」「约束」「项目技能」。
-- **F13 笔记**：`/notes` 瀑布流按 `createdAt` 倒序；空白处右键新建（无独立按钮），卡片左键进编辑、右键编辑/删除（无只读详情弹窗），删除不弹确认框；瀑布流与卡片细节见「Nuxt UI」。
-- **F14 记账**：`/expenses` 是仅含「消费日期 / 金额 / 消费内容」三项的流水列表，按 `spentAt` 倒序，先按月分段（每月一张 `UCard` 显示该月合计），月内再按本地日期分成多张 `UCard`（header 显示日期与小计，body 是当天流水行）；消费只精确到天，表单用 `UInputDate` 显示/键入日期、尾部日历按钮弹 `UPopover` + `UCalendar` 选日期（存当天本地零点的毫秒时间戳）；金额以整数「分」存储（`amount`），界面出入都经 `formatAmount` / `parseAmount` 换算，不做元的浮点运算；空白处右键新建，行左键进编辑、右键编辑/删除，删除不弹确认框；页面骨架与笔记页一致（外层 `px-[25vw] py-[10vh] h-screen`，滚动区 `h-full overflow-y-auto` 并用 Tailwind 内置的 `scrollbar-none` 隐藏滚动条）。
+- **F13 笔记**：每条笔记含标题（`title`）、正文（`content`）与书写日期（`writtenAt`，表单默认今天、可改）；`/notes` 是居中单列（`px-[25vw] py-[10vh]`）的卡片列表，按书写日期倒序分组——每天一张 `UCard`（header 是日期、body 是当天笔记，行只显示标题），组顺序与组内顺序都来自服务端；空白处右键新建（无独立按钮），行左键进编辑、右键编辑/删除（无只读详情弹窗），删除不弹确认框；卡片样式见「Nuxt UI」。
+- **F14 记账**：`/expenses` 是仅含「消费日期 / 金额 / 消费内容」三项的流水列表，按 `spentAt` 倒序，先按月分段（每月一张 `UCard` 显示该月合计），月内再按本地日期分成多张 `UCard`（header 显示日期与小计，body 是当天流水行）；消费只精确到天，表单用 `DatePicker` 选日期（存当天本地零点的毫秒时间戳）；金额以整数「分」存储（`amount`），界面出入都经 `formatAmount` / `parseAmount` 换算，不做元的浮点运算；空白处右键新建，行左键进编辑、右键编辑/删除，删除不弹确认框；页面骨架：外层 `px-[25vw] py-[10vh] h-screen`，滚动区 `h-full overflow-y-auto` 并用 Tailwind 内置的 `scrollbar-none` 隐藏滚动条）。
 
 ## 目录职责
 
-- `app/pages/`：`bookmarks.vue`（双树）、`files.vue`（文件树 + 预览区）、`notes.vue`（瀑布流）、`expenses.vue`（记账流水）、`login.vue`；`index.vue` 重定向 `/bookmarks`（`nuxt.config.ts` 的 routeRules 同款）。
+- `app/pages/`：`bookmarks.vue`（双树）、`files.vue`（文件树 + 预览区）、`notes.vue`（单列卡片列表）、`expenses.vue`（记账流水）、`login.vue`；`index.vue` 重定向 `/bookmarks`（`nuxt.config.ts` 的 routeRules 同款）。
 - `app/components/`：`FileTree`、`FileUploadModal`、`BookmarkFormModal`、`FolderFormModal`、`MoveFormModal`、`NoteFormModal`、`ExpenseFormModal`、`PageNav`、`LoginForm`。
 - `app/composables/`：数据 `useBookmarks` / `useFiles` / `useNotes` / `useExpenses`，弹窗状态 `*Form`，删除 `useDelete*`，排序 `useReorderBookmarks`，右键菜单 `*Menu`，各自独立、互不混合。
 - `app/utils/`：`selfFetch` / `useSelfFetch`（请求与错误）、`bookmark-tree`（排序/组树）、`bookmark-menu`（书签与文件夹共用的 Move 子菜单）、`money`（分与元的换算）、`datetime`（日期/月份显示格式、「YYYY-MM-DD」↔ 当天零点毫秒时间戳的互转）。
@@ -61,7 +61,8 @@
 - `PUT /api/bookmarks/:id`：只更新 `name` / `url`；`type` / `parentId` / `position` 是结构性字段，分别由创建、`move`、`reorder` 维护，编辑接口不动它们。
 - `POST /api/bookmarks`：`position` 由服务端按目标 `(parentId, type)` 分组计算（`max(position) + 1`，空分组为 1），客户端不提交 `position`。
 - `GET /api/bookmarks`：按 `(parentId, type, position)` 返回，顺序自洽；客户端仍以 `sortBookmarks` 为准，不依赖该顺序。
-- `PUT /api/notes/:id` 只改 content、`createdAt` 不动；`DELETE /api/notes/:id` 不做存在性预检（删 0 行，幂等）。
+- `POST` / `PUT /api/notes` 的 `writtenAt` 由客户端提交（表单默认今天，`dateKeyToMs` 存当天本地零点的毫秒时间戳），服务端不再写 `Date.now()`。
+- `PUT /api/notes/:id` 三个字段（title/content/writtenAt）都可改（补记、改书写日期）；`DELETE /api/notes/:id` 不做存在性预检（删 0 行，幂等）。
 - `expenses` 的 CRUD 与 notes 同形；`GET /api/expenses` 按 `spentAt DESC, id DESC` 返回，`PUT /api/expenses/:id` 三个字段都可改（补记/改时间）。
 
 ## 数据库
@@ -88,13 +89,14 @@
 
 ### 表结构：notes
 
-| 字段      | 类型    | 说明                             |
-| --------- | ------- | -------------------------------- |
-| id        | integer | 主键，自增                       |
-| content   | text    | 笔记正文（必填，纯文本保留换行） |
-| createdAt | integer | 创建时间，毫秒时间戳             |
+| 字段      | 类型    | 说明                                                   |
+| --------- | ------- | ------------------------------------------------------ |
+| id        | integer | 主键，自增                                             |
+| title     | text    | 笔记标题（必填，纯文本）                               |
+| content   | text    | 笔记正文（必填，纯文本保留换行）                       |
+| writtenAt | integer | 书写日期，存当天本地零点的毫秒时间戳（默认今天，可改） |
 
-没有 `position`：瀑布流顺序完全由 `createdAt` 决定，不需要书签那套分组重编号。
+没有 `position`：列表顺序完全由 `writtenAt`（书写日期）决定，不需要书签那套分组重编号。
 
 ### 表结构：expenses
 
@@ -137,11 +139,12 @@
 - **删除刷新时序**：`useDeleteBookmark` / `useDeleteFolder` / `useDeleteNote` / `useDeleteFile` / `useDeleteExpense` 都在 DELETE 成功后立即调用传入的 `refresh()`（不 await），随后提示成功；即「删除类 composable 统一收一个 `refresh` 回调」。
 - **文案语言与页面导航**：所有页面的菜单、弹窗、提示等界面文案统一使用英文（Toast 也是英文，`selfFetch` 的错误提示见 F8）；代码注释仍用中文。各页面右下角统一渲染 `PageNav`（`fixed bottom-4 right-4` 的竖排仅图标按钮，按 `useRoute().path` 过滤掉当前页、只留其他页互跳），页面自己不再写导航按钮
 - **弹窗操作按钮**：所有弹窗的操作按钮统一放在 `UModal` 的 `#footer`、右对齐，外层固定用 `<div class="flex justify-end gap-2 w-full">`。表单弹窗的按钮不在 `<UForm>` 内，所以不用 `type="submit"`，而是给 `UForm` 挂 `ref="formRef"`（`const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')`），footer 的按钮用 `@click="formRef?.submit()"`——`UForm.submit()` 会先跑校验再触发 `@submit`，校验链路（如书签/文件夹的 `:validate`）不受影响。登录页的 `UAuthForm` 提交按钮是整行宽（`block`），不在此列
-- **笔记页瀑布流**：用 `UScrollArea` 的 `virtualize` + `lanes`（`{ lanes, gap: 16, estimateSize: 180 }`），这是 Nuxt UI 官方的 masonry 用法——`virtualize` 打开分道虚拟滚动，`lanes` 给列数，`estimateSize` 只是首屏估算、真实高度由库对每项做 `measureElement`。`lanes` 是 `ref`，由 `window.innerWidth` 的 resize 监听算成 1/2/3（笔记页内容左右对称留白 `px-[25vw]` 居中、剩 50vw；书签/文件页的 `pl-[30vw] pr-[20vw]` 偏右是给树留的，笔记页不需要）；**不要退回 CSS multi-column**（`columns-*` + `break-inside-avoid`）：那是本项目引入 Nuxt UI 瀑布流之前的写法，列平衡与卡片定位都更笨拙
-- **笔记卡片的右键定位**：卡片是页面自己渲染的 DOM，直接挂 `data-note-id`，`@contextmenu` 里用 `closest('[data-note-id]')` 反查记录；**不要照搬书签/文件树的 token class 方案**——那是 `UTree` 只透传 `item.class`、不转发任意属性导致的变通。`closest` 取不到就是空白处 → 根级菜单（新建笔记）。右键处理器里**不能 `event.stopPropagation()`**：Reka 的 ContextMenuTrigger 要靠事件冒泡到触发元素才会在指针位置打开菜单
-- **笔记卡片的预览**：卡片正文 `max-h-40 overflow-hidden`（`text-sm` 行高 20px，160px 正好 8 行）在**整行处裁断**，既不加 `line-clamp` 的省略号（代码类文本结束后挂个 `...` 很难看），也不加渐隐；完整内容靠左键 `@click` 直接打开**编辑**弹窗（`noteForm.openEdit`），与右键菜单的「Edit」是同一个入口，**没有单独的只读详情弹窗**；卡片是 `cursor-pointer`，悬停时显示手型光标。新建/编辑弹窗的 `UTextarea` 固定 `:rows="20"`（配 `:ui="{ base: 'resize-none' }"`、不加 `autoresize`），内容超出后文本框自己出滚动条。卡片高度必须有上界，虚拟瀑布的 `estimateSize` 与 `measureElement` 都指望它
+- **笔记页按天分组**：`/notes` 外层是居中留白容器 `px-[25vw] py-[10vh] h-screen`（与记账页一致；不像书签/文件页那样 `pl-[30vw] pr-[20vw]` 偏右），里面是 `h-full overflow-y-auto scrollbar-none` 的滚动区 + `space-y-6`；页面用 `toDateKey(writtenAt)` 把笔记按本地日期分组（与记账页共用 `datetime` 工具），每组一张 `UCard`（header 是 `formatDateKey` 的日期、body 是当天的笔记行），组顺序与组内顺序都顺着 `GET /api/notes` 的 `writtenAt DESC`，页面不做客户端排序
+- **笔记列表只给标题、正文只在弹窗里**：每天卡片里的行只放标题（`truncate` 单行截断），不放正文预览（曾经的 `max-h-40` 截断预览已去掉）；正文只在点行打开的新建/编辑弹窗里显示与修改。这样列表保持简洁，长文也不会把卡片撑高
+- **笔记行的右键定位**：笔记行是页面自己渲染的 DOM，直接挂 `data-note-id`，`@contextmenu` 里用 `closest('[data-note-id]')` 反查记录；**不要照搬书签/文件树的 token class 方案**——那是 `UTree` 只透传 `item.class`、不转发任意属性导致的变通。`closest` 取不到就是空白处 → 根级菜单（新建笔记）。右键处理器里**不能 `event.stopPropagation()`**：Reka 的 ContextMenuTrigger 要靠事件冒泡到触发元素才会在指针位置打开菜单
+- **笔记弹窗**：新建/编辑共用 `NoteFormModal`，`title`、`writtenAt`（书写日期）、`content` 都是必填 `UFormField`（footer 的 Save 在 title/content 都非空时才可用），`writtenAt` 用共用的 `DatePicker` 组件（见「Nuxt UI」）；`content` 的 `UTextarea` 固定 `:rows="20"`（配 `:ui="{ base: 'resize-none' }"`、不加 `autoresize`），内容超出后文本框自己出滚动条。左键点行即进编辑（与右键菜单的 Edit 同一入口）
 - **删除一律不弹确认框**：书签 / 文件夹 / 笔记 / 文件（含文件页的文件夹，会整棵删除）都是菜单项一点即删，没有确认弹窗、也没有撤销——个人自用项目刻意保持简单；删除菜单项统一用 `color: 'error'` + `i-lucide-trash-2`（标红）
-- **笔记顺序只由服务端给**：`createdAt` 由服务端写 `Date.now()`、编辑不改，顺序完全取自 `GET /api/notes` 的 `ORDER BY createdAt DESC, id DESC`，页面不做客户端排序（书签那套 `sortBookmarks` 是 position 模型专用的）
+- **笔记顺序只由服务端给**：`writtenAt` 是用户可改的书写日期（表单默认今天、存当天本地零点），顺序完全取自 `GET /api/notes` 的 `ORDER BY writtenAt DESC, id DESC`，页面不做客户端排序（书签那套 `sortBookmarks` 是 position 模型专用的）
 - **单一职能 + 依赖注入**：数据（`useBookmarks` / `useFiles` / `useNotes`）、弹窗状态（`*Form`）、删除（`useDelete*`）、排序（`useReorderBookmarks`）、菜单（`*Menu`）各自独立、互不混合；书签/文件夹的新增、编辑、删除全部分离（即使代码相似也不合并），移动弹窗状态独立成 `useMoveForm`。页面（`bookmarks.vue`）实例化 composable 后以参数注入菜单（如 `useFolderMenu(bookmarkForm, folderForm, removeFolder, reorder)`），菜单内部不自行实例化状态类 composable
 - **排序模型**：分组键为 `(parentId, type)`，同组内 `sortBookmarks` 恒定「文件夹优先」→「position 升序」，因此 UI 中一段连续可视区间恰好等于一个分组。客户端排序是唯一权威（`leftTree` / `rightTree` 都经 `sortBookmarks`），不依赖 `GET /api/bookmarks` 的返回顺序。移动**只做整段重编号**（按新顺序把 position 写回 `1..n`），**永不交换 position 值**——历史数据的 position 是全局计数器留下的，可能带偏移和间隙，交换语义未定义且无法自愈。新建位置由服务端计算：`POST /api/bookmarks` 写入前取目标 `(parentId, type)` 分组的 `max(position) + 1`（空分组为 1），客户端不再计算或提交 `position`；编辑不改 `position`。历史数据无需预先迁移，删除或移动时会将目标分组整段归一化为 `1..n`
 - **重编号实现**：必须走 `server/utils/renumber.ts` 的 `renumberGroupQuery(parentId, type, orderedIds)`，它用 SQLite JSON1 的 `json_each` 把顺序当参数传入，**语句数恒为 1、绑定参数为常数个且最多 4 个，与分组大小 N 无关**。不要改回「每行一条 UPDATE」（随 N 线性增长，会撞 D1 每批语句数限制），也不要改成「单条 CASE」（要 2N 个绑定参数，会撞 D1 每查询 100 个绑定参数的限制）。**调用方必须传入该分组的完整成员**——服务端不做覆盖度校验，漏传的行不会被更新
@@ -156,10 +159,9 @@
 
 - 图标使用 `@iconify-json/lucide` 集，格式如 `i-lucide-*`
 - 主题定制入口为 `app/app.config.ts`（`defineAppConfig`，当前为空）
-- 项目实际使用的组件：`UApp`、`UModal`、`UForm`、`UTree`、`UDropdownMenu`、`UContextMenu`、`UInput`、`UInputDate`、`UTextarea`、`UCard`、`UScrollArea`、`UButton`、`UFormField`、`UAuthForm`、`UPopover`、`UCalendar`
-- **记账页的日期选择器**：`UInputDate` 负责显示/键入，尾部 `#trailing` 放日历图标按钮触发 `UPopover`，`#content` 里是 `UCalendar`，选完自动 `close`；`UPopover` 的 `:reference` 借 `UInputDate` 暴露的 `inputsRef[3]?.$el` 定位（同官方 date picker 示例），取不到时回退到按钮本身。两个组件的空值类型不同（`UInputDate` 用 `null`、`UCalendar` 用 `undefined`），所以表单里各配一个 computed、共用同一份 `YYYY-MM-DD` 字符串；日期对象来自 `@internationalized/date`（`UInputDate`/`UCalendar` 的 peer 依赖，已在 `dependencies` 声明）
-- **`UScrollArea` 的 `virtualize` 需要自己的高度**：它自带 `overflow-y-auto`（主题的 root 槽），页面里必须给定高度（笔记页是外层 `h-screen` + 子元素 `h-full`），否则没有滚动容器、虚拟列表量不出视口。`items` 传数组、用默认插槽的 `{ item }` 渲染，虚拟化分支下每项是绝对定位的 `data-slot="item"` 包装，槽里的内容决定实际高度；`@tanstack/vue-virtual` 是 `@nuxt/ui` 自己的依赖，不需要在 package.json 里再声明
-- 卡片用 `UCard`（默认 `outline` 变体：`bg-default ring ring-default`），但在笔记页必须加 `:ui="{ root: 'ring-inset' }"`——`UScrollArea` 的 root 是 `overflow-y-auto overflow-x-hidden`，而 `ring` 是画在卡片边框盒之外的 box-shadow，首行/末行/最左列/最右列卡片的描边落在滚动容器内容边界上会被裁掉；`ring-inset` 把描边画进卡片内部，滚动与测量都不受影响；记账页的分组列表也用 `UCard`：日期与小计放进 `#header`（`root` 的 `divide-y` 自动分隔 header 与 body）；`:ui` 里 `root: 'ring-inset'`、`body: 'p-0 divide-y divide-default'`（`divide-y` 落在 body 的直接子元素即各行上承接分隔线），header 的主题内边距（`p-4 sm:px-6`）按需覆盖——注意 `sm:px-*` 要单独再覆盖一次才会在 sm 断点生效，只写 `p-0` 会残留主题的 `sm:px-6`；`ring-inset` 则避免描边被滚动容器（`overflow-y-auto` 会把 `overflow-x` 连带变成 `auto`）裁掉。不要手写 `ring-default` / `bg-default` 这类语义色 class 去拼表面；没有笔记时显示空白页，不放空状态组件
+- 项目实际使用的组件：`UApp`、`UModal`、`UForm`、`UTree`、`UDropdownMenu`、`UContextMenu`、`UInput`、`UInputDate`、`UTextarea`、`UCard`、`UButton`、`UFormField`、`UAuthForm`、`UPopover`、`UCalendar`；另有项目组件 `DatePicker`（包 `UInputDate` + `UPopover` + `UCalendar`，见下）
+- **日期选择器 `DatePicker`（记账页 / 笔记页共用）**：`app/components/DatePicker.vue` 把 `UInputDate` + 尾部日历按钮 + `UPopover` + `UCalendar` 封成一个只收发 `YYYY-MM-DD` 字符串的组件，表单里写 `<DatePicker v-model="formState.xxx" />` 即可；`:reference` 用包住 `UInputDate` 的 `<div ref="dateField" class="inline-block">` 定位——不要用 `inputsRef[3]`（那是内部某一段，弹窗会压在输入框上），也不要用组件的 `$el`（实测弹出的位置跑到视口外）；`:content="{ side: 'right', align: 'start', sideOffset: 8 }"` 让日历弹在整个输入框右侧而不是正下方（空间不够时 Reka 会自动翻到左侧）。`UInputDate` 空值用 `null`、`UCalendar` 用 `undefined`，两种空值差异在组件内部各配一个 computed 消化掉、共用同一份字符串；日期对象来自 `@internationalized/date`（`UInputDate`/`UCalendar` 的 peer 依赖，已在 `dependencies` 声明）
+- 记账页的分组列表用 `UCard`：日期与小计放进 `#header`（`root` 的 `divide-y` 自动分隔 header 与 body）；`:ui` 里 `root: 'ring-inset'`、`body: 'p-0 divide-y divide-default'`（`divide-y` 落在 body 的直接子元素即各行上承接分隔线），header 的主题内边距（`p-4 sm:px-6`）按需覆盖——注意 `sm:px-*` 要单独再覆盖一次才会在 sm 断点生效，只写 `p-0` 会残留主题的 `sm:px-6`；`ring-inset` 则避免描边被滚动容器（`overflow-y-auto` 会把 `overflow-x` 连带变成 `auto`）裁掉。笔记页也按天分组用 `UCard`：header 放日期、body 用 `divide-y` 分隔当天的笔记行，`:ui` 与记账页同款（`root: 'ring-inset'`）。不要手写 `ring-default` / `bg-default` 这类语义色 class 去拼表面
 - `UTree` 没有拖拽能力（底层 Reka `TreeRoot` 亦无），排序只用右键菜单的移动项实现
 - **`UTree` 单选时 `modelValue` 收的是 item 对象本身**（Reka 内部用 `getKey` 比较，不比较引用），传对应节点对象进去就有主题默认的选中样式（`selected` 变体给的是 `before:bg-elevated` 底色 + `text-highlighted`，hover 还有 `hover:before:bg-elevated/50`）。选中样式统一由 `ui.link` 覆盖决定，两处不一样：书签页的树是导航，`treeLinkUi` 把底色和文字色一起去掉（`hover:text-inherit hover:before:bg-transparent before:bg-inherit text-inherit`）；移动弹窗是选择器，底色同样去掉，但**必须留一个选中标记**，所以多了 `aria-selected:text-primary`（选中行文字变主题色、其余行 `text-inherit`，悬停不上色以免和选中混淆）——`aria-selected` 是 UTree/Reka 打在节点上的，不需要额外 data 属性。两份 `ui` 各写一遍、不抽常量。**别把书签页那份里的 `linkTrailingIcon: 'hidden'` 抄进弹窗**：那是隐藏导航箭头的，选择器要靠箭头看展开/折叠
 - **点击 `UTree` 节点会同时触发选中与折叠/展开**（Reka `TreeItem` 的 onClick 先 select 再 toggle），没有单独的展开按钮。所以移动弹窗给有子节点的项设了 `defaultExpanded: true`，目标一次全部可见、点一下即可选中（这也意味着点父级会顺手折叠它）

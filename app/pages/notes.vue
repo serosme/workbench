@@ -6,52 +6,61 @@ const { notes, refresh } = useNotes()
 const { remove } = useDeleteNote(refresh)
 const { getMenu } = useNoteMenu(noteForm, remove)
 
+// 按本地日期把笔记分组（服务端已按 createdAt 倒序，组顺序与组内顺序都顺着来，不再排序）
+const groups = computed(() => {
+  const map = new Map<string, { date: string, items: Note[] }>()
+  for (const note of notes.value) {
+    const date = toDateKey(note.writtenAt)
+    let group = map.get(date)
+    if (!group) {
+      group = { date, items: [] }
+      map.set(date, group)
+    }
+    group.items.push(note)
+  }
+  return [...map.values()]
+})
+
 const contextNote = ref<Note>()
 const contextMenuItems = computed<DropdownMenuItem[][]>(() => getMenu(contextNote.value))
 
-// 内容区左右各留 px-25vw（居中；书签/文件页的 pl-30vw/pr-20vw 偏右是给树留的，笔记页不需要），剩 50vw 用来估列数
-const lanes = ref(2)
-function updateLanes() {
-  lanes.value = window.innerWidth >= 1600 ? 3 : window.innerWidth >= 1000 ? 2 : 1
-}
-onMounted(() => {
-  updateLanes()
-  window.addEventListener('resize', updateLanes)
-})
-onUnmounted(() => window.removeEventListener('resize', updateLanes))
-
-// 卡片自己带 data-note-id，右键时先看点在不在卡片上；点空白处（含卡片下方的空白）就是根级菜单
+// 行带 data-note-id，右键时反查记录；点空白处就是根级菜单（新建）
 function openContextMenu(event: MouseEvent) {
-  const card = (event.target as HTMLElement).closest<HTMLElement>('[data-note-id]')
-  contextNote.value = notes.value.find(n => n.id === Number(card?.dataset.noteId))
+  const row = (event.target as HTMLElement).closest<HTMLElement>('[data-note-id]')
+  contextNote.value = notes.value.find(note => note.id === Number(row?.dataset.noteId))
 }
 </script>
 
 <template>
   <div class="px-[25vw] py-[10vh] h-screen">
     <UContextMenu :items="contextMenuItems" class="block h-full">
-      <div class="h-full" @contextmenu="openContextMenu">
-        <UScrollArea
-          class="h-full"
-          :items="notes"
-          :virtualize="{ lanes, gap: 16, estimateSize: 180 }"
-        >
-          <template #default="{ item }">
-            <!-- ring-inset：UScrollArea 的 overflow 会裁掉画在卡片盒外的 ring，首行/末行/最左列/最右列的边框会凭空消失 -->
-            <UCard
-              :data-note-id="item.id"
-              :ui="{ root: 'ring-inset cursor-pointer' }"
-              @click="noteForm.openEdit(item)"
+      <div class="h-full overflow-y-auto scrollbar-none" @contextmenu="openContextMenu">
+        <div class="space-y-6">
+          <!-- ring-inset：描边画进卡片内部，避免被滚动容器（overflow 会把 overflow-x 连带变成 auto）裁掉 -->
+          <UCard
+            v-for="group in groups"
+            :key="group.date"
+            :ui="{ root: 'ring-inset', header: 'p-6', body: 'px-6 pt-1.5 pb-1.5 divide-y divide-default sm:pt-1.5 sm:pb-1.5' }"
+          >
+            <template #header>
+              <span class="text-sm font-medium text-muted">{{ formatDateKey(group.date) }}</span>
+            </template>
+            <div
+              v-for="note in group.items"
+              :key="note.id"
+              :data-note-id="note.id"
+              class="flex cursor-pointer items-center py-4.5"
+              @click="noteForm.openEdit(note)"
             >
-              <!-- text-sm 行高 20px，max-h-40 = 160px 正好 8 行，在整行处裁断；不用 line-clamp 的省略号，也不加渐隐 -->
-              <p class="max-h-40 overflow-hidden text-sm break-words whitespace-pre-wrap">
-                {{ item.content }}
+              <p class="min-w-0 truncate text-highlighted">
+                {{ note.title }}
               </p>
-            </UCard>
-          </template>
-        </UScrollArea>
+            </div>
+          </UCard>
+        </div>
       </div>
     </UContextMenu>
+
     <NoteFormModal
       v-model:open="noteForm.modal.open"
       :item="noteForm.modal.item"

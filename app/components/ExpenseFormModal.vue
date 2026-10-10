@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { FormError } from '@nuxt/ui'
-import type { ComponentPublicInstance } from 'vue'
-import { parseDate } from '@internationalized/date'
 
 const props = defineProps<{
   item?: Expense | null
@@ -16,7 +13,7 @@ const open = defineModel<boolean>('open', { required: true })
 
 // item 为空就是新增、有值就是编辑，不需要额外的 mode
 const isEdit = computed(() => !!props.item)
-const title = computed(() => isEdit.value ? 'Edit Expense' : 'New Expense')
+const modalTitle = computed(() => isEdit.value ? 'Edit Expense' : 'New Expense')
 
 const formState = reactive({
   item: '',
@@ -24,26 +21,6 @@ const formState = reactive({
   // 日期在表单里存 "YYYY-MM-DD" 字符串
   spentAt: '',
 })
-
-// UInputDate 与 UCalendar 的空值类型不同（null / undefined），各配一个 computed，共用同一份字符串
-function setSpentAt(value: DateValue | null | undefined) {
-  formState.spentAt = value ? value.toString() : ''
-}
-
-const spentAtValue = computed(() => (formState.spentAt ? parseDate(formState.spentAt) : undefined))
-
-const spentAtInput = computed<DateValue | null>({
-  get: () => spentAtValue.value ?? null,
-  set: setSpentAt,
-})
-
-const spentAtCalendar = computed<DateValue | undefined>({
-  get: () => spentAtValue.value,
-  set: setSpentAt,
-})
-
-// UInputDate 把内部各段输入暴露为 inputsRef，这里借其中一段作为 UPopover 的定位参照（同官方示例）
-const inputDate = useTemplateRef<{ inputsRef: ComponentPublicInstance[] }>('inputDate')
 
 const submitting = ref(false)
 const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')
@@ -96,7 +73,7 @@ async function handleSubmit() {
 <template>
   <UModal
     v-model:open="open"
-    :title="title"
+    :title="modalTitle"
   >
     <template #body>
       <UForm ref="formRef" :state="formState" class="space-y-4" :validate="validate" @submit="handleSubmit">
@@ -107,23 +84,7 @@ async function handleSubmit() {
           <UInput v-model="formState.amount" class="w-full" type="number" step="0.01" min="0" placeholder="0.00" />
         </UFormField>
         <UFormField label="Date" name="spentAt" required>
-          <UInputDate ref="inputDate" v-model="spentAtInput">
-            <template #trailing>
-              <UPopover :reference="inputDate?.inputsRef[3]?.$el">
-                <UButton
-                  color="neutral"
-                  variant="link"
-                  size="sm"
-                  icon="i-lucide-calendar"
-                  aria-label="Select a date"
-                  class="px-0"
-                />
-                <template #content="{ close }">
-                  <UCalendar v-model="spentAtCalendar" class="p-2" @update:model-value="close?.()" />
-                </template>
-              </UPopover>
-            </template>
-          </UInputDate>
+          <DatePicker v-model="formState.spentAt" />
         </UFormField>
       </UForm>
     </template>

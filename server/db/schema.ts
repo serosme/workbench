@@ -11,8 +11,10 @@ export const bookmarks = sqliteTable('bookmarks', {
 
 export const notes = sqliteTable('notes', {
   id: integer().primaryKey({ autoIncrement: true }),
+  title: text().notNull(),
   content: text().notNull(),
-  createdAt: integer().notNull(),
+  // 书写日期：用户可改，存当天本地零点的毫秒时间戳（默认今天）
+  writtenAt: integer().notNull(),
 })
 
 export const expenses = sqliteTable('expenses', {
