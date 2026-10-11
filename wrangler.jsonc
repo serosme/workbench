@@ -9,12 +9,6 @@
       "database_name": "workbench-db"
     }
   ],
-  "r2_buckets": [
-    {
-      "binding": "BLOB",
-      "bucket_name": "workbench-r2"
-    }
-  ],
   "observability": {
     "enabled": true,
     "logs": { "invocation_logs": true },

@@ -1,6 +1,6 @@
 # Workbench Agent Instructions
 
-个人自用的 Nuxt 4 书签、文件、笔记与记账应用：单用户密码登录，书签页为书签树 + Chat 面板，文件页为文件树 + 预留预览区，笔记页为单列笔记卡片列表，记账页为按天分组的流水列表；书签节点及空白区域、文件树节点及空白区域、笔记卡片及空白区域、记账行及空白区域均通过右键打开上下文菜单。
+个人自用的 Nuxt 4 书签、笔记与记账应用：单用户密码登录，书签页为书签树 + Chat 面板，笔记页为单列笔记卡片列表，记账页为按天分组的流水列表；书签节点及空白区域、笔记卡片及空白区域、记账行及空白区域均通过右键打开上下文菜单。
 
 技术栈：Nuxt 4、Nuxt UI v4、Nuxt Hub、Drizzle ORM + SQLite/Cloudflare D1、Tailwind CSS v4、TypeScript 6、AI SDK（`ai` / `@ai-sdk/*` / `@comark/nuxt`）。个人自用、单用户、单浏览器。
 
@@ -16,20 +16,20 @@
 - **F6 移动**：Up / Down（同级一步）、To Top / To Bottom（同级首尾，整组一次重编号）、To Folder（跨父级，`MoveFormModal` 选目标父级，落到目标分组末尾）收在节点菜单的 **Move 二级菜单**里；分组首尾时对应子项 disabled，请求在途时整个 Move 菜单 disabled。
 - **F7 排序位置模型**：见「前端架构约定」的「排序模型」「重编号实现」。
 - **F8 请求与错误**：`selfFetch` 请求错误弹英文 toast，401 跳登录；`useSelfFetch` 是其 `useFetch` 封装。
-- **F9 数据库**：见「数据库」；**F10 部署/备份**：见「部署」；**F11 文件**：见「文件存储」；**F12 工程配置与技能**：见「命令」「约束」「项目技能」。
+- **F9 数据库**：见「数据库」；**F10 部署/备份**：见「部署」；**F11 工程配置与技能**：见「命令」「约束」「项目技能」。
 - **F13 笔记**：每条笔记含标题（`title`）、正文（`content`）与书写日期（`writtenAt`，表单默认今天、可改）；`/notes` 是居中单列的卡片列表（四周留白由默认布局给），按书写日期倒序分组——每天一张 `UCard`（header 是日期、body 是当天笔记，行只显示标题），组顺序与组内顺序都来自服务端；空白处右键新建（无独立按钮），行左键进编辑、右键编辑/删除（无只读详情弹窗），删除不弹确认框；卡片样式见「Nuxt UI」。
 - **F14 记账**：`/expenses` 是仅含「消费日期 / 金额 / 消费内容」三项的流水列表，按 `spentAt` 倒序，先按月分段（每月一张 `UCard` 显示该月合计），月内再按本地日期分成多张 `UCard`（header 显示日期与小计，body 是当天流水行）；消费只精确到天，表单用 `DatePicker` 选日期（存当天本地零点的毫秒时间戳）；金额以整数「分」存储（`amount`），界面出入都经 `formatAmount` / `parseAmount` 换算，不做元的浮点运算；空白处右键新建，行左键进编辑、右键编辑/删除，删除不弹确认框；滚动区 `h-full overflow-y-auto` 并用 Tailwind 内置的 `scrollbar-none` 隐藏滚动条，外层留白由默认布局给）。
 - **F15 Chat**：书签页右栏是 `ChatPanel`（`useChat`（`@ai-sdk/vue`）+ `DefaultChatTransport`（`ai`）驱动 `POST /api/chat` 流式）。可选模型不向 provider 拉取，由环境变量 `NUXT_PUBLIC_CHAT_MODELS`（`{ label, value }` 的 JSON 数组）配置（即 `runtimeConfig.public.chatModels`，`nuxt.config.ts` 里只留空数组占位；示例见 `.env.example`）。`POST /api/chat` 用 `@ai-sdk/openai-compatible` 的 `streamText`，带 `getTime` 工具（`server/utils/ai-tools/`）和 `smoothStream`（`Intl.Segmenter('zh')` 按词平滑）；assistant 文本用 `@comark/nuxt` 的 `<Markdown>` 渲染（用户文本仍为纯文本）。provider 走 `runtimeConfig.chatBaseUrl` / `chatApiKey`（env `NUXT_CHAT_BASE_URL` / `NUXT_CHAT_API_KEY`，nuxt.config 不留默认值）。没有消息时右栏显示 `ChatPlaceholder`（打字机输出的假「思考」+「服务器繁忙，请稍后重试。」），有真实消息后切换为真实对话。
 
 ## 目录职责
 
-- `app/pages/`：`bookmarks.vue`（书签树 + Chat，35/65 分栏）、`files.vue`（文件树 + 预览区）、`notes.vue`（单列卡片列表）、`expenses.vue`（记账流水）、`login.vue`；`index.vue` 重定向 `/bookmarks`（`nuxt.config.ts` 的 routeRules 同款）。
+- `app/pages/`：`bookmarks.vue`（书签树 + Chat，35/65 分栏）、`notes.vue`（单列卡片列表）、`expenses.vue`（记账流水）、`login.vue`；`index.vue` 重定向 `/bookmarks`（`nuxt.config.ts` 的 routeRules 同款）。
 - `app/layouts/`：`default.vue`（页面外壳：满高 + 四边留白 + 统一渲染 `PageNav`）；`app.vue` 用 `<NuxtLayout>` 包 `<NuxtPage>`。
-- `app/components/`：`FileTree`、`FileUploadModal`、`BookmarkFormModal`、`FolderFormModal`、`MoveFormModal`、`NoteFormModal`、`ExpenseFormModal`、`ChatPanel`、`ChatPlaceholder`、`PageNav`、`LoginForm`。
-- `app/composables/`：数据 `useBookmarks` / `useFiles` / `useNotes` / `useExpenses`，弹窗状态 `*Form`，删除 `useDelete*`，排序 `useReorderBookmarks`，右键菜单 `*Menu`，各自独立、互不混合。
+- `app/components/`：`BookmarkFormModal`、`FolderFormModal`、`MoveFormModal`、`NoteFormModal`、`ExpenseFormModal`、`ChatPanel`、`ChatPlaceholder`、`PageNav`、`LoginForm`。
+- `app/composables/`：数据 `useBookmarks` / `useNotes` / `useExpenses`，弹窗状态 `*Form`，删除 `useDelete*`，排序 `useReorderBookmarks`，右键菜单 `*Menu`，各自独立、互不混合。
 - `app/utils/`：`selfFetch` / `useSelfFetch`（请求与错误）、`bookmark-tree`（排序/组树）、`bookmark-menu`（书签与文件夹共用的 Move 子菜单）、`money`（分与元的换算）、`datetime`（日期/月份显示格式、「YYYY-MM-DD」↔ 当天零点毫秒时间戳的互转）。
-- `server/`：`api/{auth,bookmarks,chat,files,notes,expenses}`、`utils/{renumber,bookmark-group,blob-files,blob-tree,ai-tools}`、`db/schema.ts` 与 `db/migrations/sqlite/`。
-- `shared/types/`：前后端共享类型（`db.ts`、`files.ts`）。
+- `server/`：`api/{auth,bookmarks,chat,notes,expenses}`、`utils/{renumber,bookmark-group,ai-tools}`、`db/schema.ts` 与 `db/migrations/sqlite/`。
+- `shared/types/`：前后端共享类型（`db.ts`）。
 
 ## 命令
 
@@ -112,51 +112,26 @@
 
 `amount` 存分是为了避开 SQLite `real` 的 IEEE754 浮点误差（`0.1 + 0.2` 不精确），累加小计才可靠。没有 `category` / `note` / `position`：当前只记三项，列表顺序由 `spentAt` 决定。
 
-## 文件存储
-
-- 文件对象走 NuxtHub Blob Storage（`hub.blob: true`），服务端统一使用 `@nuxthub/blob` 的 `blob.list / get / put / delete`，**不直接读取 `event.context.cloudflare.env` 下的 R2 binding**
-- driver 由 `@nuxthub/core` 按 hosting 自动选择：本地 `pnpm dev` 使用 `fs` driver（目录为 `hub.dir` 下的 `blob/`），Cloudflare 构建使用 `cloudflare-r2` driver（binding 名 `BLOB`）
-- `wrangler.jsonc` 声明 R2 绑定时必须使用 binding 名 `BLOB`，与 driver 默认 binding 一致；否则生产环境会报 `R2 binding "BLOB" not found`
-- 本地 Blob 目录不会自动同步到线上 R2，两边数据独立
-- `server/utils/blob-tree.ts` 的 `buildFileTree` 只负责把 `BlobObject.pathname` 按 `/` 拆成文件树，不接触具体 driver；前端 `FileTree.vue` 统一给文件使用 `i-lucide-file`、文件夹使用 `i-lucide-folder`，并为文件和文件夹提供右键菜单
-- 文件图标不区分扩展名，统一由前端 `FileTree.vue` 渲染 `i-lucide-file`
-- 上传走**分片上传**：服务端是 `server/api/files/multipart/[action]/[...pathname].ts`，内容就是 `blob.handleMultipartUpload(event)`；客户端用官方 `useMultipartUpload` 按 `/create` → `/upload/<pathname>` → `/complete/<pathname>` 调用，`pathname` 由 `prefix` + 文件名拼出。分片按片缓冲（`streamToArrayBuffer(stream, contentLength)`），所以内存占用约等于一片（10MB），**不受 Workers 128MB 内存上限和单请求 100MB 体积上限约束**，比旧的「整个请求体流式写入」更适合大文件，并且自带进度、失败重试（`maxRetry`）和 `abort()`
-- **不要退回单请求整体上传**：不论是 `readMultipartFormData`（整份读进内存，峰值是文件大小的 2~3 倍，几十 MB 就会触发 Workers 的 128MB 限制、报[错误 1102](https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1102/)），还是「把请求体流交给 `blob.put`」（会报 `Provided readable stream must have a known length`，必须补 `FixedLengthStream`）——这两条路都已经淘汰，它们只在本地 Node 下看不出问题
-- `useMultipartUpload` 内部使用自己的 `ofetch`，**不走 `selfFetch`**；上传失败由 multipart composable 自身处理，不额外挂载全局 Toast 回调
-- **`completed` 只 resolve 不 reject**：`useMultipartUpload` 在重试耗尽后是 `Promise.all` 里 catch 掉再 `return`，所以成功 resolve `complete` 的返回值、失败 resolve `undefined`。`useFiles.upload` 必须判空并抛错，否则上传失败会被当成成功（弹窗照常关闭并 refresh）
-- **同名文件默认覆盖**：multipart 上传不在 `create` 阶段检查目标是否已存在；`complete` 会直接写入同名 key 并覆盖原文件
-- **并发策略：本地与线上统一串行**（`concurrent: 1`）。本地 fs driver 的分片状态是本地 JSON 文件，每个分片请求都要「读它 → 改 → 整个写回」，并发会出现三类问题：多个请求同时读改写同一文件互相覆盖、`writeFile` 先截断再写导致别的请求读到半截 JSON（`JSON.parse` 失败）、失败重试把同一分片号重新入队造成重复上传——任一条都会报 `Multipart upload not found`（这个错名有误导性，它同时覆盖了「文件不存在」和「JSON 解析失败」）。线上 R2 虽由服务端维护分片状态，但为保持两端上传参数与并发行为一致，也使用串行上传。
-- **本地中断上传会留残留**：fs driver 的分片元数据就写在 blob 目录里（`<pathname>.mpu.<uploadId>.json` 和 `.mpu.<uploadId>/分片文件`），而 `walkDir` 把它们当普通对象列出来——本地 `pnpm dev` 中途关页面／刷新会让这些垃圾节点出现在文件树里并永久保留（正常 complete 会删掉，重试耗尽时库会 `abort`）。线上 R2 的分片状态在服务端，没有这些文件；清理就是手动删掉 `.data/blob` 下对应的 `*.mpu.*.json` 和 `.mpu.*` 目录
-- **`partSize × concurrent` 就是服务端内存峰值**：`createGenericMultipartUploadHandler` 对每个分片做 `streamToArrayBuffer(stream, contentLength)`，整片进内存。当前 10MB × 1 = 10MB，Workers 上限 128MB（per-isolate，还要装应用本身和其它请求）。并发当前固定为 1；提高 `partSize` 会线性增加内存占用与重传代价
-- **不要用服务端 prefix 前缀列举**：`server/utils/blob-files.ts` 的 `listBlobs(prefix)` 是「拉全量 + 内存按前缀过滤」。`@nuxthub/blob` 的 fs driver 把 `list` 的 prefix 当目录名处理（`join(dir, prefix)`），传文件 key 会以「读目录」失败返回空列表，传 `docs/` 这类带斜杠的目录也不一定命中，结果是删除「接口成功但什么都没发生」。前缀过滤统一走 `listBlobs(prefix)`（内部就是「拉全量 + 内存过滤」两步，不再单独暴露 `listAllBlobs` / `filterByPrefix`），前缀尾部斜杠会被剥掉再比较，并只匹配 `${base}/` 下的对象，避免误匹配同名文件 `docs` 或 `docs-other.txt`；`tree.get.ts` 直接用 `listBlobs('')`，`delete.delete.ts` 用 `listBlobs(path)` 取整棵子树；R2 driver 的 `list({ prefix })` 本身是正常的，但为了两端一致也走同一个函数
-- 下载走 `server/api/files/download.get.ts`：`blob.head` 取大小（不存在时自抛 404）→ 超过 `MAX_SIZE`（64MB，因为 `blob.serve` / driver 的 `get` 是整份读进内存，为 Workers 预留空间）返回 413 → `blob.serve(event, path)` 流式返回。**`Content-Disposition` 头值只能是 latin1**，中文名直接写进 `filename=` 会让 Node / Workers 的头校验抛 `ERR_INVALID_CHAR`、整个下载 500，所以 ASCII 名回退一份、真正的名字走 RFC 5987 的 `filename*=UTF-8''`
-- 删除走 `server/api/files/delete.delete.ts`：key 以 `/` 结尾（文件夹）时用 `listBlobs(path)` 收集整棵子树再一次性 `blob.del(keys)`，否则直接 `blob.del(path)`；两个 driver 的 delete 都忽略不存在的 key，故不做存在性校验（幂等，也不需要考虑「别人先删了」）。handler 不写 return：Nitro 用 `preemptive` router，`undefined` 会被转成 `null` → 204
-- 上传弹窗（`FileUploadModal.vue`）收文件 + 路径前缀 + 上传进度条。最终 key 是 `prefix/文件名`；路径为空就是根目录；在文件夹里上传时路径默认是该文件夹的 `key`，用户可以继续往后追加一层（如 `documents/photos`），**新增的层不需要预先存在**，上传后自然会出现在树里——这就是替代「新建文件夹」的做法。上传期间路径输入与文件选择都 disabled，避免中途改 key
-- 前端 `useFiles` 的 `upload(key, file, onProgress)` 把 key 的目录部分交给 `useMultipartUpload` 的 `prefix`（`key.slice(0, -文件名)`），文件本体直接用 `File`——create 内部就是按 `file.name` 拼 pathname，不需要再包一层 `new File`；进度的 `watch(progress)` 建在事件处理器的调用栈里（不在 setup 作用域），不会随组件销毁自动停止，所以 `upload()` 里用 `try/finally` 手动 `stop()`；库上报的是「已完成片数 / 总片数」且先赋值再 `push`（滞后一片），要按 `chunks` 换算成正在传的那一片，否则小于一片的文件全程 0%、多片文件最多停在 `(n-1)/n`；上传弹窗通过 `upload` prop 注入，**不要在弹窗里再调一次 `useFiles()`**——那会在同一 key 上重复发起 `useSelfFetch('/api/files/tree')`，Nuxt 去重取消其中一个请求并抛 `AbortError: AsyncData request cancelled by deduplication` 并被全局 toast 弹出来
-- 右键菜单靠 token class 定位节点：`UTree` 只把 `item.class` 透传到带 `data-slot="link"` 的元素上、不转发任意属性，所以 `FileTree.vue` 的 `buildTreeItems` 组树时给每个节点挂 `file-node-<n>` 类并同时建 `token → node` 的 Map，`@contextmenu` 里 `closest('[data-slot="link"]')` 取类名再查 Map（拿不到类名就当成空白处，弹根级菜单）；`bookmarks.vue` 的 `withContextTokens` 同样给每个节点挂 `bookmark-node-<id>` 类，但右键时从类名解析出 id、直接在 `data` 里 `find` 出记录（不建 Map，也不反查树节点）；升级 Nuxt UI 时要重新核对 `item.class` 是否仍落在 link 元素上
-- `files.vue` 的文件树区域铺满左侧栏并支持空白处右键上传，右侧是**预留的空白预览区**（还没有选中/预览逻辑，不维护 selected 状态）；页面内容用 `flex h-full`（高度来自默认布局的 `h-screen`）——树要撑满高度，下方空白处才能右键上传，所以子元素要用 `h-full`；`FileTree` 的 `items` 收 `TreeItem[]`，只负责展示与右键菜单，不向外抛选中事件
-- 服务端不校验 prefix 是否存在，也不校验它是不是已存在的目录（只拦同名文件）
-
 ## 前端架构约定
 
-- **删除刷新时序**：`useDeleteBookmark` / `useDeleteFolder` / `useDeleteNote` / `useDeleteFile` / `useDeleteExpense` 都在 DELETE 成功后立即调用传入的 `refresh()`（不 await），随后提示成功；即「删除类 composable 统一收一个 `refresh` 回调」。
-- **文案语言与页面导航**：所有页面的菜单、弹窗、提示等界面文案统一使用英文（Toast 也是英文，`selfFetch` 的错误提示见 F8）；代码注释仍用中文。`PageNav`（`fixed bottom-4 right-4` 的竖排 `UNavigationMenu`，列出四个页面并自动高亮当前页）统一由默认布局渲染，页面不再自己写导航
+- **删除刷新时序**：`useDeleteBookmark` / `useDeleteFolder` / `useDeleteNote` / `useDeleteExpense` 都在 DELETE 成功后立即调用传入的 `refresh()`（不 await），随后提示成功；即「删除类 composable 统一收一个 `refresh` 回调」。
+- **文案语言与页面导航**：所有页面的菜单、弹窗、提示等界面文案统一使用英文（Toast 也是英文，`selfFetch` 的错误提示见 F8）；代码注释仍用中文。`PageNav`（`fixed bottom-4 right-4` 的竖排 `UNavigationMenu`，列出三个页面并自动高亮当前页）统一由默认布局渲染，页面不再自己写导航
 - **页面外壳（默认布局）**：`app/layouts/default.vue` 统一给页面「满高 + 四边留白」并渲染 `PageNav`；`app.vue` 用 `<NuxtLayout>` 包 `<NuxtPage>`。留白移动端为 `px-4 py-4`、`md` 起为 `px-[25vw] py-[10vh]`（`h-screen`）；页面内容根元素自己写 `h-full`（`h-screen` 已在布局上）；`login` 也用默认布局（内容居中），`index` 用 `definePageMeta({ layout: false })` 不套外壳（它只做重定向）
 - **弹窗操作按钮**：所有弹窗的操作按钮统一放在 `UModal` 的 `#footer`、右对齐，外层固定用 `<div class="flex justify-end gap-2 w-full">`。表单弹窗的按钮不在 `<UForm>` 内，所以不用 `type="submit"`，而是给 `UForm` 挂 `ref="formRef"`（`const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')`），footer 的按钮用 `@click="formRef?.submit()"`——`UForm.submit()` 会先跑校验再触发 `@submit`，校验链路（如书签/文件夹的 `:validate`）不受影响。登录页的 `UAuthForm` 提交按钮是整行宽（`block`），不在此列。移动弹窗（`MoveFormModal`）没有校验、不套 `UForm`，footer 按钮直接 `@click="handleSubmit"`
 - **笔记页按天分组**：`/notes` 是 `h-full overflow-y-auto scrollbar-none` 的滚动区 + `space-y-6`（留白交给默认布局），页面用 `toDateKey(writtenAt)` 把笔记按本地日期分组（与记账页共用 `datetime` 工具），每组一张 `UCard`（header 是 `formatDateKey` 的日期、body 是当天的笔记行），组顺序与组内顺序都顺着 `GET /api/notes` 的 `writtenAt DESC`，页面不做客户端排序
 - **笔记列表只给标题、正文只在弹窗里**：每天卡片里的行只放标题（`truncate` 单行截断），不放正文预览（曾经的 `max-h-40` 截断预览已去掉）；正文只在点行打开的新建/编辑弹窗里显示与修改。这样列表保持简洁，长文也不会把卡片撑高
-- **笔记行的右键定位**：笔记行是页面自己渲染的 DOM，直接挂 `data-note-id`，`@contextmenu` 里用 `closest('[data-note-id]')` 反查记录；**不要照搬书签/文件树的 token class 方案**——那是 `UTree` 只透传 `item.class`、不转发任意属性导致的变通。`closest` 取不到就是空白处 → 根级菜单（新建笔记）。右键处理器里**不能 `event.stopPropagation()`**：Reka 的 ContextMenuTrigger 要靠事件冒泡到触发元素才会在指针位置打开菜单
+- **笔记行的右键定位**：笔记行是页面自己渲染的 DOM，直接挂 `data-note-id`，`@contextmenu` 里用 `closest('[data-note-id]')` 反查记录；**不要照搬书签树的 token class 方案**——那是 `UTree` 只透传 `item.class`、不转发任意属性导致的变通。`closest` 取不到就是空白处 → 根级菜单（新建笔记）。右键处理器里**不能 `event.stopPropagation()`**：Reka 的 ContextMenuTrigger 要靠事件冒泡到触发元素才会在指针位置打开菜单
 - **笔记弹窗**：新建/编辑共用 `NoteFormModal`，`title`、`writtenAt`（书写日期）、`content` 都是必填 `UFormField`（footer 的 Save 在 title/content 都非空时才可用），`writtenAt` 用共用的 `DatePicker` 组件（见「Nuxt UI」）；`content` 的 `UTextarea` 固定 `:rows="20"`（配 `:ui="{ base: 'resize-none' }"`、不加 `autoresize`），内容超出后文本框自己出滚动条。左键点行即进编辑（与右键菜单的 Edit 同一入口）
-- **删除一律不弹确认框**：书签 / 文件夹 / 笔记 / 文件（含文件页的文件夹，会整棵删除）都是菜单项一点即删，没有确认弹窗、也没有撤销——个人自用项目刻意保持简单；删除菜单项统一用 `color: 'error'` + `i-lucide-trash-2`（标红）
+- **删除一律不弹确认框**：书签 / 文件夹 / 笔记 / 记账都是菜单项一点即删，没有确认弹窗、也没有撤销——个人自用项目刻意保持简单；删除菜单项统一用 `color: 'error'` + `i-lucide-trash-2`（标红）
 - **笔记顺序只由服务端给**：`writtenAt` 是用户可改的书写日期（表单默认今天、存当天本地零点），顺序完全取自 `GET /api/notes` 的 `ORDER BY writtenAt DESC, id DESC`，页面不做客户端排序（书签那套 `sortBookmarks` 是 position 模型专用的）
-- **单一职能 + 依赖注入**：数据（`useBookmarks` / `useFiles` / `useNotes`）、弹窗状态（`*Form`）、删除（`useDelete*`）、排序（`useReorderBookmarks`）、菜单（`*Menu`）各自独立、互不混合；书签与文件夹的弹窗状态形状相同，共用 `useBookmarkForm`（页面按用途各实例化一份），移动弹窗状态独立成 `useMoveForm`。页面（`bookmarks.vue`）实例化 composable 后以参数注入菜单（如 `useFolderMenu(bookmarkForm, folderForm, removeFolder, reorder)`），菜单内部不自行实例化状态类 composable
+- **单一职能 + 依赖注入**：数据（`useBookmarks` / `useNotes` / `useExpenses`）、弹窗状态（`*Form`）、删除（`useDelete*`）、排序（`useReorderBookmarks`）、菜单（`*Menu`）各自独立、互不混合；书签与文件夹的弹窗状态形状相同，共用 `useBookmarkForm`（页面按用途各实例化一份），移动弹窗状态独立成 `useMoveForm`。页面（`bookmarks.vue`）实例化 composable 后以参数注入菜单（如 `useFolderMenu(bookmarkForm, folderForm, removeFolder, reorder)`），菜单内部不自行实例化状态类 composable
 - **排序模型**：分组键为 `(parentId, type)`，同组内 `sortBookmarks` 恒定「文件夹优先」→「position 升序」，因此 UI 中一段连续可视区间恰好等于一个分组。客户端排序是唯一权威（`tree` 经 `sortBookmarks`），不依赖 `GET /api/bookmarks` 的返回顺序。移动**只做整段重编号**（按新顺序把 position 写回 `1..n`），**永不交换 position 值**——历史数据的 position 是全局计数器留下的，可能带偏移和间隙，交换语义未定义且无法自愈。新建位置由服务端计算：`POST /api/bookmarks` 写入前取目标 `(parentId, type)` 分组的 `max(position) + 1`（空分组为 1），客户端不再计算或提交 `position`；编辑不改 `position`。历史数据无需预先迁移，删除或移动时会将目标分组整段归一化为 `1..n`
 - **重编号实现**：必须走 `server/utils/renumber.ts` 的 `renumberGroupQuery(parentId, type, orderedIds)`，它用 SQLite JSON1 的 `json_each` 把顺序当参数传入，**语句数恒为 1、绑定参数为常数个且最多 4 个，与分组大小 N 无关**。不要改回「每行一条 UPDATE」（随 N 线性增长，会撞 D1 每批语句数限制），也不要改成「单条 CASE」（要 2N 个绑定参数，会撞 D1 每查询 100 个绑定参数的限制）。**调用方必须传入该分组的完整成员**——服务端不做覆盖度校验，漏传的行不会被更新
 - **移动能力查询成本**：`useReorderBookmarks` 的 `located` computed 预先构造 `id → { item, group, index }` 映射，`locate` 只做 Map 查找。不要在 `canMove` / `locate` 内重排或扫描全量数据；以往扫描造成的约 16ms/次开销是优化此处的原因。
 - **移动的两条通道**：同父级内走 `PUT /api/bookmarks/reorder`（`useReorderBookmarks` 负责）；跨父级走 `PUT /api/bookmarks/move`，由 `MoveFormModal` 自己发请求（与 `BookmarkFormModal` / `FolderFormModal` 一致：弹窗发请求 + `emit`，页面在 `@moved` 上 `refresh`），所以 `useReorderBookmarks` 里没有跨父级的函数。
 - **四个同级移动共用一套逻辑**：`move(id, direction)` / `canMove(id, direction)` 的 direction 是 `up | down | top | bottom`——「走一格」和「到首/尾」只是**目标下标**不同（`{ up: index - 1, down: index + 1, top: 0, bottom: group.length - 1 }`），所以没有单独的 `moveToEdge` / `canMoveToEdge`，也**不要用循环调 `move` 来实现移到首/尾**（一次整组重编号即可）。`move` 开头会先 `canMove` 一次：已在两端时 `up` 会算出 `target = -1`，而 `splice(-1, 0, id)` 会把它插到倒数第二位、静默写坏顺序。
 - **节点菜单的 Move 是共用的二级菜单**：`app/utils/bookmark-menu.ts` 的 `moveMenuItem(bookmark, reorder, moveForm)` 返回一个带 `children` 的子菜单项，同时给书签菜单和文件夹菜单用（各写一份会随项数增加越来越难同步）；菜单直接收 `Bookmark` 记录（页面右键时解析节点 id、从 `data` 里 find 出记录再交给菜单）。一级菜单因此只有 4~5 项。整个 Move 在请求在途时 disabled，子项各自的 `canMove` 判定照旧。
-- **菜单分节统一**：所有右键菜单都是 `DropdownMenuItem[][]`，约定为「上面一组放**全部非删除项**，最下面单独一组只放 `Delete`（`color: 'error'` + `i-lucide-trash-2`）」，两组之间即分隔线；不要把 Delete 和其它项混在同一组（`useBookmarkMenu` / `useFolderMenu` / `useNoteMenu` / `useExpenseMenu` / `useFileMenu` 都按此写）。
+- **菜单分节统一**：所有右键菜单都是 `DropdownMenuItem[][]`，约定为「上面一组放**全部非删除项**，最下面单独一组只放 `Delete`（`color: 'error'` + `i-lucide-trash-2`）」，两组之间即分隔线；不要把 Delete 和其它项混在同一组（`useBookmarkMenu` / `useFolderMenu` / `useNoteMenu` / `useExpenseMenu` 都按此写）。
 - **跨父级移动的目标候选**：页面用 `buildFolderTree(data, item)` 算出文件夹树（只含文件夹、按层级嵌套、同级按 position），注入 `MoveFormModal`；「根级」是弹窗自己补在最前面的虚拟节点（`value: null`）。传进去的是即将被移动的那条记录，util 内部只剪掉**它自己**：子孙只在从被保留的节点往下递归时才被访问，所以天然进不来——不剪则会成环，`buildTree` 里成环的行都成不了 root，整棵子树从界面消失且再也点不到；服务端在 `move.put.ts` 里也会再拒一次。
 - **错误处理（fail loudly）**：`selfFetch` 已在全局统一弹出错误 toast，业务代码**不写 try/catch 包裹请求**；失败时异常自然传播（unhandled rejection 即预期表现），成功路径（emit/refresh/toast）不执行
 
@@ -174,7 +149,7 @@
 - **点击 `UTree` 节点会同时触发选中与折叠/展开**（Reka `TreeItem` 的 onClick 先 select 再 toggle），没有单独的展开按钮。移动弹窗那棵树只用来选目标：把 `expanded` 做成**受控值**（`collectExpanded` 收集所有文件夹的 key），点击时 Reka 发出的 `update:expanded` 不采纳，所以**点一下只选中、不会折叠**，所有文件夹保持展开；再配 `ui.linkTrailingIcon: 'hidden'` 隐藏展开/折叠箭头。另外单选默认 `selectionBehavior: 'toggle'`（重复点同一项会取消选中）——那会造成「高亮没了、但 `formState.target` 还留着」的不一致，所以移动弹窗设 `selection-behavior="replace"`，点同一个文件夹仍保持选中
 - **`UTree` 的 `get-key` 会被塞一个空对象**：Reka 用 `getKey(modelValue ?? {})` 探测「当前没有选中」，所以 `get-key` 必须对 `{}` 也安全——`bookmarks.vue` 写成 `String(item.id)`（`String(undefined)` 无害）。**不要在 `get-key` 里对节点做多一层取值**（如 `item.xxx.id`）：`{}` 上没有 `xxx`，会在树挂载时抛 `Cannot read properties of undefined`、**整页白屏**（这个坑真踩过一次）
 - **`UDropdownMenu` 的 item 带 `children` 就渲染成二级菜单**（内部是 `DropdownMenu.Sub` / `SubTrigger`，自带右侧箭头，`SubTrigger` 上的 `disabled` 会连子菜单一起禁用，子项的 `onSelect` 照常生效）。鼠标悬停由 `pointermove` + 100ms 定时器触发打开；`UContextMenu` 走的是同一个 content 组件，所以右键菜单里也能用子菜单
-- **弹窗尺寸按需在实例上写 `ui`**：`UModal` 没有 `size` 之类的 prop，宽度只能由 `ui.content` 覆盖（主题默认 `max-w-lg`，512px）；表单/上传/删除弹窗都用默认值，移动弹窗传 `:ui="{ content: 'max-w-2xl' }"`（672px，候选树宽一点更好读）、笔记的新建/编辑弹窗传 `max-w-4xl`（896px，长文输入更舒服）。移动弹窗的候选树容器是 `max-h-96`（384px）：候选树是整棵展开的（本地数据实测内容高约 1100px），再高会顶到弹窗自身的视口上限，超出部分由容器自己滚动。`ui.content` 与主题里的 `max-w-lg` 冲突由 tailwind-merge 解决，主题的 `bg-default` / `rounded-lg` / `ring` 等类都保留
+- **弹窗尺寸按需在实例上写 `ui`**：`UModal` 没有 `size` 之类的 prop，宽度只能由 `ui.content` 覆盖（主题默认 `max-w-lg`，512px）；表单/删除弹窗都用默认值，移动弹窗传 `:ui="{ content: 'max-w-2xl' }"`（672px，候选树宽一点更好读）、笔记的新建/编辑弹窗传 `max-w-4xl`（896px，长文输入更舒服）。移动弹窗的候选树容器是 `max-h-96`（384px）：候选树是整棵展开的（本地数据实测内容高约 1100px），再高会顶到弹窗自身的视口上限，超出部分由容器自己滚动。`ui.content` 与主题里的 `max-w-lg` 冲突由 tailwind-merge 解决，主题的 `bg-default` / `rounded-lg` / `ring` 等类都保留
 - Toast 通过 Nuxt UI 的 `useToast()` composable 调用，没有直接渲染 `UToast` 组件
 
 ## 项目技能
@@ -189,7 +164,6 @@
 - worker 名由 `wrangler.jsonc` 的 `name` 决定（现为 `workbench`）
 - `wrangler.jsonc` 设 `workers_dev: false`、`preview_urls: false`，不对外暴露 `*.workers.dev` 地址（因此需要自定义域名 / route 才能访问）
 - D1 绑定在 `wrangler.jsonc` 中声明，构建时 nitro 合并到 `.output/server/wrangler.json`
-- R2 bucket 也要先建：`wrangler r2 bucket create workbench-r2`（`wrangler.jsonc` 的 `r2_buckets` 按名绑定到 `BLOB`，bucket 不存在时部署会报绑定解析失败）；它是生产环境的文件存储，本地 `.data/blob` 不会同步过去
 - 部署命令 `pnpm deploy` 通过 `cross-env` 跨平台设置 `NITRO_PRESET=cloudflare_module`，然后执行：构建 Nitro preset `cloudflare_module` → `wrangler deploy --keep-vars` → 应用 D1 迁移（`wrangler --config .output/server/wrangler.json d1 migrations apply DB --remote`）
 - `wrangler deploy` 从根目录运行，经构建生成且已被 gitignore 的 `.wrangler/deploy/config.json` 重定向到 `.output/server/wrangler.json`；迁移命令需显式 `--config .output/server/wrangler.json`（`migrations_dir` 为相对该文件的 `db/migrations/sqlite/`）
 - 部署前提：wrangler 已认证（`wrangler login`，或设置 `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` 环境变量）
@@ -201,7 +175,7 @@
 - 这是个人自用项目：单用户、单浏览器操作，数据来源和使用流程都在自己掌控内。按现有代码的写法实现，**不要为假想场景增加防御代码、重复校验、无意义的状态分支或多余的 `try/catch`**；只在真实的外部边界处理错误。
 - 优先使用现有技术栈和模块，在现有文件中完成修改；保持实现简单、直接、可读，优先让正常流程直观，不为小功能增加额外抽象、通用层或复杂架构。
 - 遵循现有命名、目录职责和数据流，不擅自改变已有 API、配置字段或模块边界。
-- **自动导入**：`app/composables/*`、`app/utils/*`、`app/components/*`、`server/utils/*`、`shared/types/*` 的类型、`@nuxthub/db` 的 `db`/`schema`、`@nuxthub/blob` 的 `blob` 都由 Nuxt 自动导入，直接用即可，**不要写重复的显式 import**。例外是服务端事件工具（`defineEventHandler`/`readBody`/`createError`/`getRequestURL`/`useSession`/`getSession`/`useRuntimeConfig`）：必须从 `nuxt/server` 显式导入——h3 的同名自动导入与 `nuxt/server` 混用会报 `NUXT_E8012`，且 `event` 形状、`useRuntimeConfig` 签名都不同。
+- **自动导入**：`app/composables/*`、`app/utils/*`、`app/components/*`、`server/utils/*`、`shared/types/*` 的类型、`@nuxthub/db` 的 `db`/`schema` 都由 Nuxt 自动导入，直接用即可，**不要写重复的显式 import**。例外是服务端事件工具（`defineEventHandler`/`readBody`/`createError`/`getRequestURL`/`useSession`/`getSession`/`useRuntimeConfig`）：必须从 `nuxt/server` 显式导入——h3 的同名自动导入与 `nuxt/server` 混用会报 `NUXT_E8012`，且 `event` 形状、`useRuntimeConfig` 签名都不同。
 - 页面请求优先走 `selfFetch` / `useSelfFetch`；样式使用 Tailwind class 与 Nuxt UI 的 `ui` 属性。
 - `try/finally` 是允许的：它没有 `catch`，不吞异常，仅用于复位状态（如 `moving`、`submitting`），不违反 fail-loudly 约定。
 - ESLint 使用 `@antfu/eslint-config`（已启用 formatters 与 vue 规则），不支持 Prettier（`.vscode/settings.json` 已禁用）；style/format 类规则与引号、分号由 ESLint 自动修复，保存时自动执行。
