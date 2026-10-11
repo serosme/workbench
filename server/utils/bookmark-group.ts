@@ -1,4 +1,3 @@
-import { schema } from '@nuxthub/db'
 import { and, eq, isNull } from 'drizzle-orm'
 
 /** 同一 `(parentId, type)` 分组的 SQL 条件（`parentId` 为空即根级）。 */

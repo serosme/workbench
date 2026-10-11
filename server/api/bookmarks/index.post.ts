@@ -1,4 +1,3 @@
-import { db, schema } from '@nuxthub/db'
 import { sql } from 'drizzle-orm'
 
 // 新建位置由服务端算：目标 (parentId, type) 分组内 max(position) + 1，空分组为 1。

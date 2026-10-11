@@ -1,5 +1,3 @@
-import type { FileTreeNode } from '#shared/types/files'
-
 const PART_SIZE = 10 * 1024 * 1024
 
 export function useFiles() {

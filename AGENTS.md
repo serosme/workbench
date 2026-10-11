@@ -201,6 +201,7 @@
 - 这是个人自用项目：单用户、单浏览器操作，数据来源和使用流程都在自己掌控内。按现有代码的写法实现，**不要为假想场景增加防御代码、重复校验、无意义的状态分支或多余的 `try/catch`**；只在真实的外部边界处理错误。
 - 优先使用现有技术栈和模块，在现有文件中完成修改；保持实现简单、直接、可读，优先让正常流程直观，不为小功能增加额外抽象、通用层或复杂架构。
 - 遵循现有命名、目录职责和数据流，不擅自改变已有 API、配置字段或模块边界。
+- **自动导入**：`app/composables/*`、`app/utils/*`、`app/components/*`、`server/utils/*`、`shared/types/*` 的类型、`@nuxthub/db` 的 `db`/`schema`、`@nuxthub/blob` 的 `blob` 都由 Nuxt 自动导入，直接用即可，**不要写重复的显式 import**。例外是服务端事件工具（`defineEventHandler`/`readBody`/`createError`/`getRequestURL`/`useSession`/`getSession`/`useRuntimeConfig`）：必须从 `nuxt/server` 显式导入——h3 的同名自动导入与 `nuxt/server` 混用会报 `NUXT_E8012`，且 `event` 形状、`useRuntimeConfig` 签名都不同。
 - 页面请求优先走 `selfFetch` / `useSelfFetch`；样式使用 Tailwind class 与 Nuxt UI 的 `ui` 属性。
 - `try/finally` 是允许的：它没有 `catch`，不吞异常，仅用于复位状态（如 `moving`、`submitting`），不违反 fail-loudly 约定。
 - ESLint 使用 `@antfu/eslint-config`（已启用 formatters 与 vue 规则），不支持 Prettier（`.vscode/settings.json` 已禁用）；style/format 类规则与引号、分号由 ESLint 自动修复，保存时自动执行。

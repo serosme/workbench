@@ -1,5 +1,3 @@
-import { sortBookmarks } from '~/utils/bookmark-tree'
-
 // up / down 走一格，top / bottom 走到分组首尾：四者的边界条件与重排方式完全一样，只是目标下标不同。
 type MoveDirection = 'up' | 'down' | 'top' | 'bottom'
 

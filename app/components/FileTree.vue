@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { DropdownMenuItem, TreeItem } from '@nuxt/ui'
-import type { FileTreeNode } from '#shared/types/files'
 
 const props = defineProps<{
   items: TreeItem[]

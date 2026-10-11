@@ -1,4 +1,3 @@
-import { db, schema } from '@nuxthub/db'
 import { eq } from 'drizzle-orm'
 
 // 编辑只改展示字段：type / parentId / position 属结构性字段，分别由创建、move、reorder 路径负责，

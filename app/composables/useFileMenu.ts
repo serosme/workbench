@@ -1,5 +1,4 @@
 import type { DropdownMenuItem } from '@nuxt/ui'
-import type { FileTreeNode } from '#shared/types/files'
 
 export function useFileMenu(
   uploadForm: ReturnType<typeof useFileUploadForm>,

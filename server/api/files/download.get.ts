@@ -1,5 +1,3 @@
-import { blob } from '@nuxthub/blob'
-
 // 单个下载请求会把整份文件读进内存（NuxtHub 的读接口都是整份读，driver 没有流式接口），
 // 线上受 Workers 128MB isolate 上限约束，所以留出余量、超过就明确报 413 而不是让它报 1102。
 // 本地也一样受限——为了本地和线上行为一致。

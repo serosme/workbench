@@ -1,5 +1,4 @@
 import type { BlobObject } from '@nuxthub/core/blob'
-import { blob } from '@nuxthub/blob'
 
 // @nuxthub/blob 的 fs driver 把 list 的 prefix 当目录名处理（join(dir, prefix)）：
 // 传文件 key 会以「读目录」失败返回空列表，所以统一拉全量再在内存里按前缀过滤。

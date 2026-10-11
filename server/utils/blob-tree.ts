@@ -1,5 +1,4 @@
 import type { BlobObject } from '@nuxthub/core/blob'
-import type { FileTreeNode } from '#shared/types/files'
 
 export function buildFileTree(objects: BlobObject[]): FileTreeNode[] {
   const roots: FileTreeNode[] = []

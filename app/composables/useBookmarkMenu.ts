@@ -1,5 +1,4 @@
 import type { DropdownMenuItem } from '@nuxt/ui'
-import { moveMenuItem } from '~/utils/bookmark-menu'
 
 export function useBookmarkMenu(
   bookmarkForm: ReturnType<typeof useBookmarkForm>,

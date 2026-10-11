@@ -1,5 +1,3 @@
-import { db, schema } from '@nuxthub/db'
-
 export default defineEventHandler(async (event) => {
   const body = await readBody<Pick<InsertNote, 'title' | 'content' | 'writtenAt'>>(event)
   await db.insert(schema.notes).values({

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { TreeItem } from '@nuxt/ui'
-import type { FolderNode } from '~/utils/bookmark-tree'
 
 const props = defineProps<{
   item?: Bookmark | null

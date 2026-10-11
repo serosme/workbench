@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { DropdownMenuItem, TreeItem } from '@nuxt/ui'
-import { buildFolderTree } from '~/utils/bookmark-tree'
 
 const bookmarkForm = useBookmarkForm()
 const folderForm = useBookmarkForm()

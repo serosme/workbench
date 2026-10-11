@@ -1,5 +1,4 @@
 import type { TreeItem } from '@nuxt/ui'
-import { buildTree, sortBookmarks } from '~/utils/bookmark-tree'
 
 function toTreeItem(b: Bookmark) {
   return {
