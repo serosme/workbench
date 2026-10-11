@@ -1,27 +1,19 @@
 <script setup lang="ts">
-const route = useRoute()
+import type { NavigationMenuItem } from '@nuxt/ui'
 
-const links = [
-  { to: '/bookmarks', icon: 'i-lucide-bookmark', label: 'Bookmarks' },
-  { to: '/files', icon: 'i-lucide-folder-tree', label: 'Files' },
-  { to: '/notes', icon: 'i-lucide-notebook-pen', label: 'Notes' },
-  { to: '/expenses', icon: 'i-lucide-wallet', label: 'Expenses' },
+const items: NavigationMenuItem[] = [
+  { label: 'Bookmarks', icon: 'i-lucide-bookmark', to: '/bookmarks' },
+  { label: 'Files', icon: 'i-lucide-folder-tree', to: '/files' },
+  { label: 'Notes', icon: 'i-lucide-notebook-pen', to: '/notes' },
+  { label: 'Expenses', icon: 'i-lucide-wallet', to: '/expenses' },
 ]
-
-// 当前页不放自己的入口，只留其他页
-const others = computed(() => links.filter(link => link.to !== route.path))
 </script>
 
 <template>
-  <div class="fixed bottom-4 right-4 flex flex-col gap-2">
-    <UButton
-      v-for="link in others"
-      :key="link.to"
-      :to="link.to"
-      :icon="link.icon"
-      :aria-label="link.label"
-      color="neutral"
-      variant="ghost"
-    />
-  </div>
+  <UNavigationMenu
+    :items="items"
+    orientation="vertical"
+    :ui="{ linkLabel: 'sr-only' }"
+    class="fixed bottom-4 right-4"
+  />
 </template>
