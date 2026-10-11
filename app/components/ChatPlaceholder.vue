@@ -16,7 +16,7 @@ onMounted(() => {
 
     thinkingDone.value = true
     clearInterval(typingTimer)
-  }, 20)
+  }, 12)
 })
 
 onUnmounted(() => clearInterval(typingTimer))
