@@ -1,26 +1,24 @@
-function pad(n: number): string {
-  return String(n).padStart(2, '0')
-}
+import { DateFormatter, fromDateToLocal, getLocalTimeZone, parseDate, toCalendarDate } from '@internationalized/date'
+
+const dateFormatter = new DateFormatter('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+const monthFormatter = new DateFormatter('en-US', { year: 'numeric', month: 'long' })
 
 // 按本地时区取「YYYY-MM-DD」，既是分组键，也是 <UInputDate> 的字面量
 export function toDateKey(ms: number): string {
-  const d = new Date(ms)
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return toCalendarDate(fromDateToLocal(new Date(ms))).toString()
 }
 
-// 消费只精确到天：把日期字符串还原成当天本地零点的毫秒时间戳
+// 消费/书写只精确到天：把「YYYY-MM-DD」还原成当天本地零点的毫秒时间戳
 export function dateKeyToMs(value: string): number {
-  const [year, month, day] = value.split('-').map(Number)
-  return new Date(year!, month! - 1, day!).getTime()
+  return parseDate(value).toDate(getLocalTimeZone()).getTime()
 }
 
-// 展示用：把「YYYY-MM-DD」格式化成英文短格式，如 "Oct 9, 2026"
+// 展示用：「YYYY-MM-DD」→ "Oct 9, 2026"
 export function formatDateKey(value: string): string {
-  return new Date(dateKeyToMs(value)).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+  return dateFormatter.format(parseDate(value).toDate(getLocalTimeZone()))
 }
 
-// 展示用：把「YYYY-MM」格式化成英文月份，如 "October 2026"
+// 展示用：「YYYY-MM」→ "October 2026"
 export function formatMonthKey(value: string): string {
-  const [year, month] = value.split('-').map(Number)
-  return new Date(year!, month! - 1, 1).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+  return monthFormatter.format(parseDate(`${value}-01`).toDate(getLocalTimeZone()))
 }
