@@ -31,7 +31,7 @@ onUnmounted(() => clearInterval(typingTimer))
 
     <Markdown
       v-if="thinkingDone"
-      value="服务器繁忙，请稍后重试。"
+      value="余额不足，请充值。"
       class="mt-4 *:first:mt-0 *:last:mb-0"
     />
   </div>
