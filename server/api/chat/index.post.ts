@@ -3,7 +3,7 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import {
   convertToModelMessages,
   createUIMessageStreamResponse,
-  isStepCount,
+  isLoopFinished,
   smoothStream,
   streamText,
   toUIMessageStream,
@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
     model: provider(model),
     messages: await convertToModelMessages(messages),
     tools: aiTools,
-    stopWhen: isStepCount(3),
+    stopWhen: isLoopFinished(),
     experimental_transform: smoothStream({
       delayInMs: 12,
       chunking: zhWordSegmenter,
