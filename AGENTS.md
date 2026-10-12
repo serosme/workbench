@@ -10,7 +10,7 @@
 
 - **F1 登录**：单用户密码（环境变量 `NUXT_AUTH_PASSWORD`，即 `runtimeConfig.authPassword`）；校验通过后用 Nuxt 4.6 的 `useSession`（`nuxt/server`）写入 `nuxt-session` cookie（默认 httpOnly/secure/sameSite=lax，maxAge 1 天），密封用 Nuxt 的应用密钥 `NUXT_APP_SECRET`（≥32 字符，session 内部经 `deriveSecret` 读取）；除 `/api/auth/` 外所有 API 由 `server/middleware/auth.ts` 用 `getSession` 校验；CSRF 防护依赖该 cookie 的 `sameSite=lax`（跨站 POST 不带 cookie），不要改成 `none`。
 - **F2 书签数据**：一次拉全量，`sortBookmarks` 排序后 `buildTree` 组成单树——文件夹在上（各带子书签），根级书签按 position 落在最下边。
-- **F3 双栏与节点菜单**：节点右键打开操作菜单，节点链接隐藏默认尾随箭头；`md` 起左栏（35%）是书签树、右栏（65%）是 Chat（`ChatPanel`），窄屏（`md` 以下）隐藏右栏、书签树占满整宽；书签树区域铺满高度、空白处右键新建（文件夹/书签），无底部新建虚拟项。
+- **F3 双栏与节点菜单**：节点右键打开操作菜单，节点链接隐藏默认尾随箭头；`md` 起左栏（35%）是书签树、右栏（65%）是 Chat（`ChatPanel`），窄屏（`md` 以下）隐藏右栏、书签树占满整宽；书签树区域铺满高度、空白处右键新建（文件夹/书签），无底部新建虚拟项。两栏（含弹窗）在首次 `GET /api/bookmarks` 返回后才一起渲染（`v-if="data"`）——否则右栏 Chat 会先出现、左栏书签树随后补上，两栏显示不同步；判定用 `data` 而不是 `status`，刷新时旧数据还在、不会整页闪。
 - **F4 新建/编辑**：书签、文件夹各一个 create/edit 双模式弹窗；新建位置由服务端在 `POST /api/bookmarks` 计算（见「排序模型」），提交带 `submitting` 守卫防重复提交。
 - **F5 删除**：非空文件夹拒绝删除；删除后同组剩余项整段重编号。
 - **F6 移动**：Up / Down（同级一步）、To Top / To Bottom（同级首尾，整组一次重编号）、To Folder（跨父级，`MoveFormModal` 选目标父级，落到目标分组末尾）收在节点菜单的 **Move 二级菜单**里；分组首尾时对应子项 disabled，请求在途时整个 Move 菜单 disabled。

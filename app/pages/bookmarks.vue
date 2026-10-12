@@ -54,7 +54,8 @@ function getItemKey(item: TreeItem): string {
 </script>
 
 <template>
-  <div class="flex h-full">
+  <!-- 首次请求结束前两栏都不渲染：否则右栏 Chat 会先出现、左栏书签树随后才补上，两栏显示不同步。用 data 而不是 status，刷新时（data 还在）不会闪 -->
+  <div v-if="data" class="flex h-full">
     <aside class="flex h-full w-full min-w-0 flex-col pr-0 md:w-[35%] md:pr-6">
       <UContextMenu :items="contextMenuItems" class="block min-h-0 flex-1">
         <div class="h-full min-h-32 overflow-y-auto scrollbar-none" @contextmenu="openContextMenu">
