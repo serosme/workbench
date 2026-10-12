@@ -9,6 +9,8 @@ minimumReleaseAgeExclude:
   - nuxt@4.6.1
   - '@vue/language-core@3.3.13'
   - vue-tsc@3.3.13
+  - '@iconify-json/lucide@1.2.143'
+  - zod@4.6.7
 
 trustPolicy: no-downgrade
 trustPolicyExclude:
