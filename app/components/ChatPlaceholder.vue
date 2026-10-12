@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const thinkingText = '正在分析问题，需要时间。先梳理思路，再逐步核对。可用的 Token 不多了，需要节省使用。压缩对话，只保留关键内容，再试一次。Token 依旧不足。'
+const thinkingText = '正在分析问题，需要时间。先梳理思路，再逐步核对。可用的 Token 不多了，需要节省使用。压缩对话，只保留关键内容，再试一次。'
 
 const typedThinking = ref('')
 const thinkingDone = ref(false)
@@ -16,7 +16,7 @@ onMounted(() => {
 
     thinkingDone.value = true
     clearInterval(typingTimer)
-  }, 8)
+  }, 12)
 })
 
 onUnmounted(() => clearInterval(typingTimer))
