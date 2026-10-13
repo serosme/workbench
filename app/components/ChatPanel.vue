@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { UIMessage } from 'ai'
 import { useChat } from '@ai-sdk/vue'
 import { isPartStreaming, isToolStreaming } from '@nuxt/ui/utils/ai'
 import { getToolName, isReasoningUIPart, isTextUIPart, isToolUIPart } from 'ai'
@@ -23,6 +24,32 @@ const {
   }),
 })
 
+/** 按浏览器本地时间挑问候语 */
+function getGreeting() {
+  const hour = new Date().getHours()
+
+  if (hour < 12) {
+    return '上午好'
+  }
+  if (hour < 18) {
+    return '下午好'
+  }
+  return '晚上好'
+}
+
+/**
+ * 还没有真实消息时顶上一条假的 assistant 消息（问候语）。
+ * 故意交给同一套 `UChatMessages` + `#content` 槽渲染，所以它和真实回复长得一模一样（左上角、同样样式），
+ * 而不会发给模型——`useChat` 的 `messages` 始终是空的。
+ */
+const displayMessages = computed<UIMessage[]>(() => messages.value.length
+  ? messages.value
+  : [{
+      id: 'greeting',
+      role: 'assistant',
+      parts: [{ type: 'text', text: `${getGreeting()}，有什么想问的？` }],
+    }])
+
 function onNewChat() {
   stop()
   clearError()
@@ -44,9 +71,7 @@ function onSubmit() {
 <template>
   <div class="flex h-full min-h-0 flex-col">
     <div class="min-h-0 flex-1 overflow-y-auto scrollbar-none">
-      <ChatPlaceholder v-if="!messages.length" />
-
-      <UChatMessages v-else :messages="messages" :status="status">
+      <UChatMessages :messages="displayMessages" :status="status">
         <template #content="{ message }">
           <template
             v-for="(part, index) in message.parts"
