@@ -71,7 +71,11 @@ function onSubmit() {
 <template>
   <div class="flex h-full min-h-0 flex-col">
     <div class="min-h-0 flex-1 overflow-y-auto scrollbar-none">
-      <UChatMessages :messages="displayMessages" :status="status">
+      <UChatMessages
+        :messages="displayMessages"
+        :status="status"
+        should-auto-scroll
+      >
         <template #content="{ message }">
           <template
             v-for="(part, index) in message.parts"
@@ -88,6 +92,7 @@ function onSubmit() {
               v-else-if="isReasoningUIPart(part)"
               :text="part.text"
               :streaming="isPartStreaming(part)"
+              :ui="{ body: 'max-h-36 scrollbar-none' }"
             />
 
             <Markdown
