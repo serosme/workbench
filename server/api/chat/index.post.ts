@@ -4,7 +4,6 @@ import {
   convertToModelMessages,
   createUIMessageStreamResponse,
   isLoopFinished,
-  smoothStream,
   streamText,
   toUIMessageStream,
 } from 'ai'
@@ -14,8 +13,6 @@ interface ChatBody {
   messages: UIMessage[]
   model: string
 }
-
-const zhWordSegmenter = new Intl.Segmenter('zh', { granularity: 'word' })
 
 export default defineEventHandler(async (event) => {
   const { messages, model } = await readBody<ChatBody>(event)
@@ -32,10 +29,6 @@ export default defineEventHandler(async (event) => {
     messages: await convertToModelMessages(messages),
     tools: aiTools,
     stopWhen: isLoopFinished(),
-    experimental_transform: smoothStream({
-      delayInMs: 12,
-      chunking: zhWordSegmenter,
-    }),
   })
 
   return createUIMessageStreamResponse({

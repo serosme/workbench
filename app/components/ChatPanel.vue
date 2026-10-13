@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useChat } from '@ai-sdk/vue'
 import { isPartStreaming, isToolStreaming } from '@nuxt/ui/utils/ai'
-import { DefaultChatTransport, getToolName, isReasoningUIPart, isTextUIPart, isToolUIPart } from 'ai'
+import { getToolName, isReasoningUIPart, isTextUIPart, isToolUIPart } from 'ai'
 
 const { public: { chatModels } } = useRuntimeConfig()
 
@@ -17,7 +17,7 @@ const {
   regenerate,
   clearError,
 } = useChat({
-  transport: new DefaultChatTransport({
+  transport: new SmoothChatTransport({
     api: '/api/chat',
     body: () => ({ model: model.value }),
   }),
