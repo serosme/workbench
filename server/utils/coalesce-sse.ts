@@ -8,9 +8,15 @@
  * 真实 DeepSeek 流 403 → 25），客户端打字机的观感不变：`app/utils/chat-smooth.ts` 本来就按自己的节奏
  * 重新切片，收到的 chunk 变大只是它一次多切几个字。
  *
- * 只合并「单 choice、`finish_reason` 为 null、`delta` 里只带一段 content / reasoning_content（另一个键是 null
- * 占位）」的帧；其余帧（role、tool_calls、finish_reason、usage、`[DONE]`、解析失败的帧）一律原样透传 ——
- * tool_calls 的参数是逐段流的，合并会破坏 SDK 的部分解析语义。
+ * 只合并「我们能无损重建整帧」的增量：单 choice、`finish_reason` 为 null、`delta` 里除空占位外只有一段
+ * content / reasoning_content，或一段「只带 index + function.arguments 的单个 tool_calls 续帧」。其余帧
+ * （role、带 id / function.name 的 tool_calls 首帧、finish_reason、usage、`[DONE]`、解析失败的帧）一律连
+ * 分帧符原样透传：mergedFrame 是从零重建的，凡是没被显式拷贝的字段都会丢，所以只碰内容可以穷举的帧。
+ *
+ * 工具参数同样是「一个 token 一帧」，而工具常常吃整段 SQL，帧数比正文还多（实测一次工具调用可达上千帧），
+ * 所以它必须一起合并。SDK 侧对参数就是 `function.arguments` 的字符串拼接（openai-compatible 先把参数攒在
+ * `pendingToolCalls.bufferedArguments`，之后每个分片直接进 StreamingToolCallTracker 追加），
+ * 按 (choice, tool_call) 分组合并没有任何语义变化。
  */
 type FetchLike = typeof globalThis.fetch
 
@@ -36,13 +42,20 @@ interface ChatChunk {
   }[]
 }
 
-type TextKind = 'content' | 'reasoning_content'
+/** 可合并的增量：正文、思考，或工具参数（tool_call 的 arguments 续帧） */
+type DeltaKind = 'content' | 'reasoning_content' | 'tool-args'
 
-interface Pending {
-  chunk: ChatChunk
+interface Delta {
   index: number
-  kind: TextKind
+  /** 仅 tool-args 有意义：tool_calls 数组里的下标；其余类型恒为 0 */
+  callIndex: number
+  kind: DeltaKind
   text: string
+}
+
+interface Pending extends Delta {
+  /** 首帧只借来重建骨架（id / object / created / model / system_fingerprint），其余字段不复制 */
+  chunk: ChatChunk
 }
 
 /** 取缓冲区里最早的一帧 */
@@ -83,34 +96,74 @@ function frameData(frame: string): string | null {
   return value
 }
 
-/** 判定一帧能不能并进待发缓冲：必须是纯文本增量 */
-function textDelta(chunk: ChatChunk): { index: number, kind: TextKind, text: string } | null {
+/**
+ * 只带 `index` + `function.arguments` 的单个 tool_calls 续帧；其余形状一律返回 null 走透传。
+ *
+ * 带 `id` / `function.name` 的首帧必须原样透传：SDK 靠它建出 tool call，而且它可能还夹带 `type` /
+ * `extra_content` 之类的 provider 专属字段，重建会丢。多个 tool_calls、参数以外字段有值也不合并。
+ * 收益上也不亏：SDK 收到 name 之前本来就在缓冲参数，那一帧的参数只是个很短的初始片段。
+ */
+function toolArgumentsDelta(value: unknown): { index: number, arguments: string } | null {
+  if (!Array.isArray(value) || value.length !== 1)
+    return null
+  const [call] = value as {
+    index?: number
+    id?: unknown
+    type?: unknown
+    extra_content?: unknown
+    function?: { name?: unknown, arguments?: unknown }
+  }[]
+  if (!call || typeof call !== 'object' || call.index == null)
+    return null
+  if (call.id != null || call.type != null || call.extra_content != null || call.function?.name != null)
+    return null
+  const args = call.function?.arguments
+  if (typeof args !== 'string' || args === '')
+    return null
+  return { index: call.index, arguments: args }
+}
+
+/** 判定一帧能不能并进待发缓冲：必须是纯文本增量或纯工具参数续帧 */
+function mergeableDelta(chunk: ChatChunk): Delta | null {
   if (!Array.isArray(chunk.choices) || chunk.choices.length !== 1)
     return null
   const [choice] = chunk.choices
   if (!choice || choice.finish_reason != null || !choice.delta)
     return null
   // 增量形状各端点不统一：DeepSeek 每帧都是 {content: null, reasoning_content: "…"}，
-  // 所以不能要求「只有一个键」——只允许这两个键，且恰好一个是非空字符串
-  let hit: { kind: TextKind, text: string } | null = null
+  // 所以不能要求「只有一个键」——空占位一律跳过，真正带值的那一段只允许一个
+  let hit: { kind: DeltaKind, text: string, callIndex: number } | null = null
   for (const [key, value] of Object.entries(choice.delta)) {
-    if (key !== 'content' && key !== 'reasoning_content')
-      return null
     if (value == null || value === '')
       continue
-    if (typeof value !== 'string' || hit)
+    if (hit)
       return null
-    hit = { kind: key, text: value }
+    if (key === 'tool_calls') {
+      const call = toolArgumentsDelta(value)
+      if (!call)
+        return null
+      hit = { kind: 'tool-args', text: call.arguments, callIndex: call.index }
+      continue
+    }
+    if (key !== 'content' && key !== 'reasoning_content')
+      return null
+    if (typeof value !== 'string')
+      return null
+    hit = { kind: key, text: value, callIndex: 0 }
   }
   if (!hit)
     return null
-  return { index: choice.index ?? 0, kind: hit.kind, text: hit.text }
+  return { index: choice.index ?? 0, kind: hit.kind, text: hit.text, callIndex: hit.callIndex }
 }
 
 /** 用待发缓冲最后那一帧做骨架重建一帧：只保留必要字段，避免把 usage 之类的顺手复制一遍 */
 function mergedFrame(pending: Pending): string {
   const { chunk } = pending
-  const merged: ChatChunk = { choices: [{ index: pending.index, delta: { [pending.kind]: pending.text }, finish_reason: null }] }
+  // 重建出来的 tool_calls 帧只有 index + arguments：能走到这里的本来就只带这两样（见 toolArgumentsDelta）
+  const delta = pending.kind === 'tool-args'
+    ? { tool_calls: [{ index: pending.callIndex, function: { arguments: pending.text } }] }
+    : { [pending.kind]: pending.text }
+  const merged: ChatChunk = { choices: [{ index: pending.index, delta, finish_reason: null }] }
   if (chunk.id != null)
     merged.id = chunk.id
   if (chunk.object != null)
@@ -125,7 +178,7 @@ function mergedFrame(pending: Pending): string {
 }
 
 /**
- * 包一层上游 fetch：响应体照样流式返回，只是把相邻的文本增量先合并。
+ * 包一层上游 fetch：响应体照样流式返回，只是把相邻的文本 / 思考 / 工具参数增量先合并。
  * 用法：`createOpenAICompatible({ ..., fetch: coalescingFetch(globalThis.fetch) })`
  */
 export function coalescingFetch(inner: FetchLike): FetchLike {
@@ -191,15 +244,16 @@ export function coalescingFetch(inner: FetchLike): FetchLike {
           catch {
             return pass(frame, separator)
           }
-          const delta = textDelta(chunk)
+          const delta = mergeableDelta(chunk)
           if (!delta)
             return pass(frame, separator)
-          if (pending && (pending.kind !== delta.kind || pending.index !== delta.index))
+          // 换段就 flush：正文 / 思考 / 工具参数之间，以及不同 tool_call 之间都不能混在一帧里
+          if (pending && (pending.kind !== delta.kind || pending.index !== delta.index || pending.callIndex !== delta.callIndex))
             flush()
           if (pending)
             pending.text += delta.text
           else
-            pending = { chunk, index: delta.index, kind: delta.kind, text: delta.text }
+            pending = { chunk, ...delta }
           if (pending.text.length >= MIN_CHARS)
             flush()
           else
