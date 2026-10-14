@@ -48,7 +48,8 @@
 | `pnpm deploy`      | 部署到 Cloudflare Workers + D1 |
 
 - 包管理器为 `pnpm`（锁定在 pnpm-lock.yaml，workspace 配置在 pnpm-workspace.yaml）
-- `pnpm-workspace.yaml` 启用 `trustPolicy: no-downgrade`：Nuxt 的 `@nuxt/vite-builder` 依赖 `cssnano ^9`，而 cssnano 9 / postcss-* 家族换发布流程后只剩 provenance、没有 npm trusted-publisher 证据，会被该策略判为 trust downgrade 并中断安装，故在 `trustPolicyExclude` 里按包名（`cssnano*`、`postcss-*`、`stylehacks`、`css-declaration-sorter`）排除；以后升级这些包若再报 `ERR_PNPM_TRUST_DOWNGRADE`，按同样方式补排除项
+- `pnpm-workspace.yaml` 启用 `trustPolicy: no-downgrade`：包的信任证据比历史版本下降时（如原来由 trusted publisher 发布、现在只剩 provenance）中断安装。Nuxt 的 `@nuxt/vite-builder` 依赖 `cssnano ^9`，而 cssnano 9 / postcss-* 家族换发布流程后正属此类，会被判为 trust downgrade。现在不再逐个列 `trustPolicyExclude`，而用 `trustPolicyIgnoreAfter: 1440` 处理——只对发布不满 1440 分钟（1 天）的新版本做 trust 校验，更旧的包直接跳过，所以升级这些包不必再维护排除名单（该值只能是整数分钟，写 `1d` 之类的时长字符串会报 `invalid u64`）
+- `minimumReleaseAgeExclude` 列出本次升级引入的新版本（`@ai-sdk/*`、`ai`、`vue`、`@vue/*` 等），让它们绕过 `minimumReleaseAge`（默认 1440 分钟）的发布等待期；配 `minimumReleaseAgeExcludePrune: true`，pnpm 会在 `install` / `add` / `update` 等操作时自动删掉新 lockfile 已不再解析到的条目，升级依赖后名单会自行收敛、不用手工清理
 - `pnpm dev` 启动后支持 HMR，修改前端代码无需重新构建或重启；脚本带 `--no-tui`，关掉 Nuxt 4.6（`@nuxt/cli` 4.x）的 `dev` 默认交互式 TUI，改用普通流式日志（临时想看 TUI 可直接跑 `nuxt dev`）
 - 本地密钥配置在 `.env`（已被 gitignore，模板见 `.env.example`）：`NUXT_AUTH_PASSWORD`（登录密码）、`NUXT_APP_SECRET`（≥32 字符随机串，Nuxt 应用密钥，用于密封 session）；Chat 另有 `NUXT_CHAT_BASE_URL`（任意 OpenAI 兼容端点）、`NUXT_CHAT_API_KEY`（该 provider 的密钥）、`NUXT_PUBLIC_CHAT_MODELS`（见 F15）
 - 无测试框架，无 CI 配置

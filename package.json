@@ -14,18 +14,18 @@
     "deploy": "cross-env NITRO_PRESET=cloudflare_module nuxt build && wrangler deploy --keep-vars && wrangler --config .output/server/wrangler.json d1 migrations apply DB --remote"
   },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "3.0.67",
-    "@ai-sdk/vue": "4.0.137",
+    "@ai-sdk/openai-compatible": "3.0.68",
+    "@ai-sdk/vue": "4.0.139",
     "@comark/nuxt": "0.7.0",
     "@internationalized/date": "3.12.4",
     "@libsql/client": "0.18.0",
     "@nuxt/ui": "4.11.3",
     "@nuxthub/core": "0.10.8",
-    "ai": "7.0.137",
+    "ai": "7.0.138",
     "drizzle-orm": "0.45.4",
     "nuxt": "4.6.1",
     "tailwindcss": "4.3.3",
-    "vue": "3.5.43",
+    "vue": "3.5.44",
     "vue-router": "5.4.0",
     "zod": "4.6.7"
   },
