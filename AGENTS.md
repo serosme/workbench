@@ -23,7 +23,8 @@
 ### 渲染与取数
 
 - **不用 SSR**：单用户自用，没有 SEO / 首屏指标要求，服务端取数只会平添分支；代价是首屏要等客户端请求，所以页面外壳的留白与 loading 由默认布局统一兜住。
-- **书签页两栏在首次 `GET /api/bookmarks` 返回后才一起渲染**（`v-if="data"`，不用 `status`）：否则 Chat 右栏先出现、书签树后补上，两栏不同步；用 `data` 判定还能让刷新时旧数据继续显示、不整页闪。
+- **书签页两栏在 `GET /api/bookmarks` 与 `GET /api/chat/models` 都返回后才一起渲染**（`v-if="data && chatModels"`，不用 `status`）：否则 Chat 右栏先出现、书签树后补上，两栏不同步，Chat 的模型下拉还要从空再补一跳；用 `data` 判定还能让刷新时旧数据继续显示、不整页闪。**代价是模型接口失败时（provider 挂了 / 没配 key）整页白屏**，而书签数据其实已经拿到；要放宽就把判定写成 `data && (chatModels || chatModelsError)`。
+- **模型列表在页面里请求、以 prop 传给 `ChatPanel`**：`ChatPanel` 挂在 `v-if` 之内，请求写在它里面要等书签返回、组件挂载后才发出，首屏从 `max(书签, 模型)` 退化成两者相加；页面 setup 在 `v-if` 之外，两个请求才并发。**别把 `useSelfFetch('/api/chat/models')` 挪回 `ChatPanel`**。
 - **`selfFetch` / `useSelfFetch` 而不是裸 `$fetch`**：401 跳登录与错误 toast 只有一处实现，业务代码拿到的语义统一。
 - **fail loudly，不写 `try/catch` 包请求**：`selfFetch` 已全局弹错误 toast，异常自然传播（unhandled rejection 即预期表现），成功路径（emit / refresh / toast）就不会执行；`try/finally` 允许，因为它不吞异常、只用于复位 `moving` / `submitting` 这类状态。
 - **唯一刻意的例外是 AI 的 `queryDatabase`**：SQL 由模型生成、语法错是常态，必须用 `try/catch` 把错误回传给模型自纠。

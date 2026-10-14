@@ -5,6 +5,8 @@ const bookmarkForm = useBookmarkForm()
 const folderForm = useBookmarkForm()
 const moveForm = useMoveForm()
 const { tree, refresh, data } = useBookmarks()
+// 在页面里请求而不是丢给 ChatPanel：ChatPanel 挂在 `v-if` 之内，由它发起会让模型列表等书签返回后才开始请求（串行）
+const { data: chatModels } = useSelfFetch<ChatModel[]>('/api/chat/models')
 const { remove: removeBookmark } = useDeleteBookmark(refresh)
 const { remove: removeFolder } = useDeleteFolder(refresh)
 const reorder = useReorderBookmarks(data, refresh)
@@ -54,8 +56,9 @@ function getItemKey(item: TreeItem): string {
 </script>
 
 <template>
-  <!-- 首次请求结束前两栏都不渲染：否则右栏 Chat 会先出现、左栏书签树随后才补上，两栏显示不同步。用 data 而不是 status，刷新时（data 还在）不会闪 -->
-  <div v-if="data" class="flex h-full">
+  <!-- 书签与模型列表都返回后才渲染两栏：否则右栏 Chat 会先出现、左栏书签树随后才补上，两栏显示不同步，Chat 的模型下拉还会从空再补齐。
+       用 data 而不是 status，刷新时（data 还在）不会闪。两个请求在 setup 里同时发出，所以等待时间是两者的较大者。 -->
+  <div v-if="data && chatModels" class="flex h-full">
     <aside class="flex h-full w-full min-w-0 flex-col pr-0 md:w-[35%] md:pr-6">
       <UContextMenu :items="contextMenuItems" class="block min-h-0 flex-1">
         <div class="h-full min-h-32 overflow-y-auto scrollbar-none" @contextmenu="openContextMenu">
@@ -65,7 +68,7 @@ function getItemKey(item: TreeItem): string {
     </aside>
 
     <section class="hidden h-full min-w-0 flex-1 border-l border-default pl-6 md:block">
-      <ChatPanel />
+      <ChatPanel :models="chatModels" />
     </section>
 
     <BookmarkFormModal

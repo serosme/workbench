@@ -4,19 +4,11 @@ import { useChat } from '@ai-sdk/vue'
 import { isPartStreaming, isToolStreaming } from '@nuxt/ui/utils/ai'
 import { getToolName, isReasoningUIPart, isTextUIPart, isToolUIPart } from 'ai'
 
-const { data: chatModels } = useSelfFetch<{ label: string, value: string }[]>('/api/chat/models')
+const props = defineProps<{ models: ChatModel[] }>()
 
 const input = ref('')
-const model = ref('')
-
-// 模型列表来自 `/api/chat/models`（见 server/api/chat/models.get.ts），到达后落首项当默认
-watch(chatModels, (models) => {
-  const first = models?.[0]
-
-  if (!model.value && first) {
-    model.value = first.value
-  }
-}, { immediate: true })
+// 模型列表由页面在渲染前取好（见 pages/bookmarks.vue），这里只落首项当默认
+const model = ref(props.models[0]?.value ?? '')
 
 const {
   messages,
@@ -133,8 +125,7 @@ function onSubmit() {
           <div class="ml-auto flex items-center gap-1">
             <USelect
               v-model="model"
-              :items="chatModels ?? []"
-              :loading="!chatModels"
+              :items="models"
               color="neutral"
               variant="ghost"
               size="sm"
