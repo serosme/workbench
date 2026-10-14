@@ -33,7 +33,7 @@ function stripLiteralsAndComments(sql: string): string {
 
 // 通用只读查询：一条 SELECT / WITH 语句，模型自己写 SQL。其余语句一律拒绝
 export const queryDatabase = tool({
-  description: `Run a single read-only SQLite query against the app database and return the rows as JSON. Only SELECT (or WITH ... SELECT) statements are allowed; INSERT / UPDATE / DELETE and DDL are always rejected. Always include a LIMIT.
+  description: `Run a single read-only SQLite query against the app database and return the rows as JSON. Only SELECT (or WITH ... SELECT) statements are allowed; INSERT / UPDATE / DELETE and DDL are always rejected. Always include a LIMIT: the tool also hard-caps the result at ${MAX_ROWS} rows / ${MAX_CHARS} characters and reports "truncated": true when it had to trim, so refine the query (filter or aggregate in SQL) instead of expecting the rest.
 
 This database holds the user's bookmarks, notes and expenses and is the source of truth. Do the work in SQL and let the database compute — do NOT fetch raw rows and calculate yourself:
 - Aggregation: SUM / COUNT / AVG / MIN / MAX with GROUP BY, ORDER BY, HAVING (e.g. total spend per month).
@@ -62,12 +62,16 @@ ${SCHEMA}`,
 
     // SQL 由模型生成，语法错是常态：把错误回传给它自己纠正（本项目唯一刻意 catch 的地方）
     try {
-      const rows = await db.all(statement) as Record<string, unknown>[]
+      // 强制在模型语句外面套一层 LIMIT：模型不写、或写个天大的 LIMIT 时，整表 / 笛卡尔积会被 D1
+      // 整份传回 Worker 再解析成对象——既烧 CPU（Free 只有 10ms 额度）也吃 128MB 内存。
+      // 多取一行用来判断「后面还有」。派生表套法对 WITH / UNION / ORDER BY / 重复列名都合法（实测）。
+      const rows = await db.all(`SELECT * FROM (\n${statement}\n) LIMIT ${MAX_ROWS + 1}`) as Record<string, unknown>[]
 
       // 先按行数截断，再按字符数截断；至少保留一行，避免单行超预算时整条结果为空
+      const candidates = rows.slice(0, MAX_ROWS)
       const limited: Record<string, unknown>[] = []
       let size = 0
-      for (const row of rows.slice(0, MAX_ROWS)) {
+      for (const row of candidates) {
         const rowSize = JSON.stringify(row).length
         if (limited.length > 0 && size + rowSize > MAX_CHARS)
           break
@@ -76,8 +80,9 @@ ${SCHEMA}`,
       }
 
       return {
-        rowCount: rows.length,
-        truncated: limited.length < rows.length,
+        rowCount: limited.length,
+        // 外层多取的那一行说明还有更多；字符数提前 break 也算截断
+        truncated: rows.length > MAX_ROWS || limited.length < candidates.length,
         rows: limited,
       }
     }

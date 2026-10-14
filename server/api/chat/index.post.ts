@@ -23,6 +23,8 @@ export default defineEventHandler(async (event) => {
     name: 'chat',
     baseURL: chatBaseUrl,
     apiKey: chatApiKey,
+    // 上游一个 token 一帧，逐帧穿过 AI SDK 的流式管线在 Workers 上每帧都有固定 CPU 开销，先合并再交给 SDK
+    fetch: coalescingFetch(globalThis.fetch),
   })
 
   const result = streamText({
