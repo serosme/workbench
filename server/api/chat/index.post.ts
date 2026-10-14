@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
   const { chatBaseUrl, chatApiKey } = useRuntimeConfig()
 
   const provider = createOpenAICompatible({
-    name: 'commandcode',
+    name: 'chat',
     baseURL: chatBaseUrl,
     apiKey: chatApiKey,
   })

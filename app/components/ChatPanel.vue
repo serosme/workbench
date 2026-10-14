@@ -4,10 +4,19 @@ import { useChat } from '@ai-sdk/vue'
 import { isPartStreaming, isToolStreaming } from '@nuxt/ui/utils/ai'
 import { getToolName, isReasoningUIPart, isTextUIPart, isToolUIPart } from 'ai'
 
-const { public: { chatModels } } = useRuntimeConfig()
+const { data: chatModels } = useSelfFetch<{ label: string, value: string }[]>('/api/chat/models')
 
 const input = ref('')
-const model = ref(chatModels[0]?.value ?? '')
+const model = ref('')
+
+// 模型列表来自 `/api/chat/models`（见 server/api/chat/models.get.ts），到达后落首项当默认
+watch(chatModels, (models) => {
+  const first = models?.[0]
+
+  if (!model.value && first) {
+    model.value = first.value
+  }
+}, { immediate: true })
 
 const {
   messages,
@@ -124,7 +133,8 @@ function onSubmit() {
           <div class="ml-auto flex items-center gap-1">
             <USelect
               v-model="model"
-              :items="chatModels"
+              :items="chatModels ?? []"
+              :loading="!chatModels"
               color="neutral"
               variant="ghost"
               size="sm"
@@ -145,7 +155,7 @@ function onSubmit() {
             <UChatPromptSubmit
               :status="status"
               size="sm"
-              :disabled="!input.trim()"
+              :disabled="!input.trim() || !model"
               @stop="stop()"
               @reload="regenerate()"
             />

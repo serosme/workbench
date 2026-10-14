@@ -10,9 +10,6 @@ export default defineNuxtConfig({
     authPassword: '',
     chatBaseUrl: '',
     chatApiKey: '',
-    public: {
-      chatModels: [] as { label: string, value: string }[],
-    },
   },
   css: ['~/assets/css/main.css'],
   ui: {
