@@ -1,7 +1,7 @@
 import { eq, sql } from 'drizzle-orm'
 import { createError } from 'nuxt/server'
 
-export async function createBookmark(input: Pick<InsertBookmark, 'type' | 'name' | 'url' | 'parentId'>) {
+export async function createBookmark(input: CreateBookmarkInput) {
   const { type, name, url = null, parentId = null } = input
 
   if (parentId !== null) {

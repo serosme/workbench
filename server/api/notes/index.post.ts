@@ -1,4 +1,4 @@
-export default defineEventHandler(async (event) => {
-  const body = await readBody<Pick<InsertNote, 'title' | 'content' | 'writtenAt'>>(event)
+export default defineEventHandler<{ body: SaveNoteInput }, void>(async (event) => {
+  const body = await readBody<SaveNoteInput>(event)
   await createNote(body)
 })

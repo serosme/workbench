@@ -14,6 +14,7 @@ interface ChatBody {
   model: string
 }
 
+// 同 login.post.ts：nuxt/server 的 defineEventHandler 只收返回值类型，这里声明不了 body 形状
 export default defineEventHandler(async (event) => {
   const { messages, model } = await readBody<ChatBody>(event)
   const { chatBaseUrl, chatApiKey } = useRuntimeConfig()

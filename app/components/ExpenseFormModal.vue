@@ -50,7 +50,7 @@ async function handleSubmit() {
     return
   submitting.value = true
   try {
-    const body: Pick<InsertExpense, 'item' | 'amount' | 'spentAt'> = {
+    const body: SaveExpenseInput = {
       item: formState.item.trim(),
       amount: parseAmount(formState.amount),
       spentAt: dateKeyToMs(formState.spentAt),

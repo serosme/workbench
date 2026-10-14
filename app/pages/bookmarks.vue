@@ -6,7 +6,7 @@ const folderForm = useBookmarkForm()
 const moveForm = useMoveForm()
 const { tree, refresh, data } = useBookmarks()
 // 在页面里请求而不是丢给 ChatPanel：ChatPanel 挂在 `v-if` 之内，由它发起会让模型列表等书签返回后才开始请求（串行）
-const { data: chatModels } = useSelfFetch<ChatModel[]>('/api/chat/models')
+const { data: chatModels } = useSelfFetch('/api/chat/models')
 const { remove: removeBookmark } = useDeleteBookmark(refresh)
 const { remove: removeFolder } = useDeleteFolder(refresh)
 const reorder = useReorderBookmarks(data, refresh)

@@ -1,4 +1,4 @@
-export default defineEventHandler(async (event) => {
-  const body = await readBody<Pick<InsertExpense, 'item' | 'amount' | 'spentAt'>>(event)
+export default defineEventHandler<{ body: SaveExpenseInput }, void>(async (event) => {
+  const body = await readBody<SaveExpenseInput>(event)
   await createExpense(body)
 })

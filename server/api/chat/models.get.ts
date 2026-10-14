@@ -14,5 +14,5 @@ export default defineEventHandler(async () => {
     headers: { Authorization: `Bearer ${chatApiKey}` },
   })
 
-  return data.map(model => ({ label: model.name ?? model.id, value: model.id }))
+  return data.map((model): ChatModel => ({ label: model.name ?? model.id, value: model.id }))
 })

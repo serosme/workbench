@@ -47,15 +47,13 @@ async function handleSubmit() {
   submitting.value = true
   try {
     if (isEdit.value) {
-      await selfFetch(`/api/bookmarks/${props.item!.id}`, {
-        method: 'PUT',
-        // 编辑只提交可改字段：type / parentId / position 由服务端保持不变
-        body: { name: formState.name, url: formState.url },
-      })
+      const body: UpdateBookmarkInput = { name: formState.name, url: formState.url }
+      // 编辑只提交可改字段：type / parentId / position 由服务端保持不变
+      await selfFetch(`/api/bookmarks/${props.item!.id}`, { method: 'PUT', body })
       emit('updated')
     }
     else {
-      const body: Pick<InsertBookmark, 'type' | 'name' | 'url' | 'parentId'> = {
+      const body: CreateBookmarkInput = {
         type: 'bookmark',
         name: formState.name,
         url: formState.url,

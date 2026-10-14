@@ -50,7 +50,7 @@ async function handleSubmit() {
     return
   submitting.value = true
   try {
-    const body: Pick<InsertNote, 'title' | 'content' | 'writtenAt'> = {
+    const body: SaveNoteInput = {
       title: formState.title.trim(),
       content: formState.content.trim(),
       writtenAt: dateKeyToMs(formState.writtenAt),

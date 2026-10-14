@@ -1,10 +1,5 @@
 import { eq } from 'drizzle-orm'
 
-interface MoveBody {
-  id: number
-  parentId: number | null
-}
-
 // candidate 是否落在 ancestorId 的子树里（顺着 parentId 往上走）。
 function hasAncestor(list: Bookmark[], candidate: number, ancestorId: number): boolean {
   const parents = new Map(list.map(b => [b.id, b.parentId]))
@@ -20,8 +15,8 @@ function hasAncestor(list: Bookmark[], candidate: number, ancestorId: number): b
 // 跨父级移动：把一条记录挂到 parentId 下，并落到目标 (parentId, type) 分组的末尾。
 // 源分组与目标分组各整段重编号，连同 parentId 更新放在同一个 db.batch 里；目标分组的重编号
 // 写到最后，因此同一父级内移动（源与目标同组）也能得到正确顺序。
-export default defineEventHandler(async (event) => {
-  const { id, parentId } = await readBody<MoveBody>(event)
+export default defineEventHandler<{ body: MoveBookmarkInput }, void>(async (event) => {
+  const { id, parentId } = await readBody<MoveBookmarkInput>(event)
   if (parentId === id)
     throw createError({ status: 400, message: 'ParentId cannot be itself' })
 

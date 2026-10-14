@@ -1,4 +1,4 @@
-export async function createNote(input: Pick<InsertNote, 'title' | 'content' | 'writtenAt'>) {
+export async function createNote(input: SaveNoteInput) {
   const [created] = await db.insert(schema.notes).values(input).returning()
   return created
 }

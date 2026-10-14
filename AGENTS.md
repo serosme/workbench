@@ -51,6 +51,15 @@
 - **`notes` / `expenses` 没有 `position`**：列表顺序完全交给 `writtenAt` / `spentAt`（倒序），不需要书签那套分组重编号。写入时间由客户端或 AI 工具传值，服务端不写 `Date.now()`。
 - **删除不做存在性预检**（删 0 行、幂等），也不弹确认框、没有撤销：个人自用刻意保持简单；删除菜单项统一 `color: 'error'` + `i-lucide-trash-2`。
 
+### 类型与跨端契约
+
+- **判定规则：按「谁要看见」放，不按「谁先写的」放。** 跨 HTTP 边界的契约进 `shared/types/`；只在服务端存在的进 `server/`（上游 provider 响应、AI 工具入参、SQL 细节）；只在客户端的视图模型留 `app/`（`FolderNode`、`MoveDirection`、`DeltaChunk`）。
+- **读类型不再写显式泛型**：`routeTypedFetch` 让 `useSelfFetch('/api/bookmarks')` 的 `data` 直接从服务端 handler 的返回值推出来（`SerializeObject<Bookmark>[] | undefined`），服务端改字段就会在这里报错。写成 `useSelfFetch<Bookmark[]>(...)` 是**断言而不是校验**：它覆盖推断，还会顺手关掉该次调用的路径 / method 检查（实测 `{ method: 'DELETE' }` 带泛型不报错、不带泛型报错）。只有响应形状与视图类型确实不同时才用泛型——本项目没有。
+- **写类型在 `shared/types/db.ts` 命名一次**（`CreateBookmarkInput` / `UpdateBookmarkInput` / `MoveBookmarkInput` / `ReorderBookmarksInput` / `SaveNoteInput` / `SaveExpenseInput`）：请求体推不出来（写接口 handler 没有返回值），字段清单必须手写，那就只写这一份，别再各处 `Pick<InsertX, ...>`。`{ body }` 声明喂给 Nuxt 的路由类型生成器，前端 `selfFetch` 才会按它校验 body；第二个 `void` 是返回值——不写会退化成 `any`。
+- **例外是 `nuxt/server` 版的 `defineEventHandler`**（`login.post.ts` / `chat/index.post.ts`）：它只收返回值类型，声明不了 body；换成 h3 版会让 `useSession` 收到不可移植的 event（NUXT_E8012）。所以这两个接口的 body 前端不校验（登录表单 / AI SDK 自己拼的 body，已接受）。
+- **`useSelfFetch` 必须用对象形式**（`createUseFetch({ $fetch: selfFetch })`）：回调形式在 `routeTypedFetch` 下会把工厂的请求形状推断成「所有路由 body 的并集」，`createUseFetch` 自身报错、`data` 跟着退化成 `unknown`。
+- **`experimental.routeTypedFetch` + `strictRouteTypes` 常开**：前者把请求形状从 handler 声明推断到前端，后者让拼错的路径、路径与 method 不匹配直接报错；`routeTypedFetch` 在 Nuxt 5 会默认开启。代价是 `$fetch` / `useFetch` 不再接受 `params`（本项目不用）。
+
 ### AI（Chat 与工具）
 
 - **Chat 只有两个配置**（`NUXT_CHAT_BASE_URL` + `NUXT_CHAT_API_KEY`）：任何 OpenAI 兼容端点都能用，换 provider 不改代码。
