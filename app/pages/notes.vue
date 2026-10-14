@@ -24,6 +24,10 @@ const groups = computed(() => {
 const contextNote = ref<Note>()
 const contextMenuItems = computed<DropdownMenuItem[][]>(() => getMenu(contextNote.value))
 
+// 模板只能引用 script 里出现过的标识符：只写在模板里的自动导入工具会被 vue-tsc 当成组件属性
+// （Property 'formatDateKey' does not exist on type 'ComponentPublicInstance'），所以在 script 里收口
+const dayLabel = (date: string) => formatDateKey(date)
+
 // 行带 data-note-id，右键时反查记录；点空白处就是根级菜单（新建）
 function openContextMenu(event: MouseEvent) {
   const row = (event.target as HTMLElement).closest<HTMLElement>('[data-note-id]')
@@ -43,7 +47,7 @@ function openContextMenu(event: MouseEvent) {
             :ui="{ root: 'ring-inset', header: 'p-6', body: 'px-6 pt-1.5 pb-1.5 divide-y divide-default sm:pt-1.5 sm:pb-1.5' }"
           >
             <template #header>
-              <span class="text-sm font-medium text-muted">{{ formatDateKey(group.date) }}</span>
+              <span class="text-sm font-medium text-muted">{{ dayLabel(group.date) }}</span>
             </template>
             <div
               v-for="note in group.items"

@@ -9,6 +9,12 @@ const { getMenu } = useExpenseMenu(expenseForm, remove)
 const contextExpense = ref<Expense>()
 const contextMenuItems = computed<DropdownMenuItem[][]>(() => getMenu(contextExpense.value))
 
+// 模板只能引用 script 里出现过的标识符：只写在模板里的自动导入工具会被 vue-tsc 当成组件属性
+// （Property 'formatAmount' does not exist on type 'ComponentPublicInstance'），所以在 script 里收口
+const money = (cents: number) => `¥${formatAmount(cents)}`
+const monthLabel = (month: string) => formatMonthKey(month)
+const dayLabel = (date: string) => formatDateKey(date)
+
 const groups = computed(() => {
   const map = new Map<string, { date: string, total: number, items: Expense[] }>()
   for (const expense of expenses.value) {
@@ -55,8 +61,8 @@ function openContextMenu(event: MouseEvent) {
             <!-- 月份卡片：显示该月合计 -->
             <UCard :ui="{ root: 'ring-inset' }">
               <div class="flex items-end justify-between">
-                <span class="text-sm font-medium text-muted">{{ formatMonthKey(entry.month) }}</span>
-                <span class="text-lg font-semibold tabular-nums text-highlighted">¥{{ formatAmount(entry.total) }}</span>
+                <span class="text-sm font-medium text-muted">{{ monthLabel(entry.month) }}</span>
+                <span class="text-lg font-semibold tabular-nums text-highlighted">{{ money(entry.total) }}</span>
               </div>
             </UCard>
             <div class="space-y-6">
@@ -67,8 +73,8 @@ function openContextMenu(event: MouseEvent) {
               >
                 <template #header>
                   <div class="flex items-center justify-between text-sm">
-                    <span class="font-medium text-muted">{{ formatDateKey(group.date) }}</span>
-                    <span class="tabular-nums text-muted">¥{{ formatAmount(group.total) }}</span>
+                    <span class="font-medium text-muted">{{ dayLabel(group.date) }}</span>
+                    <span class="tabular-nums text-muted">{{ money(group.total) }}</span>
                   </div>
                 </template>
                 <div
@@ -81,7 +87,7 @@ function openContextMenu(event: MouseEvent) {
                   <p class="min-w-0 truncate text-highlighted">
                     {{ expense.item }}
                   </p>
-                  <span class="tabular-nums">¥{{ formatAmount(expense.amount) }}</span>
+                  <span class="tabular-nums">{{ money(expense.amount) }}</span>
                 </div>
               </UCard>
             </div>
