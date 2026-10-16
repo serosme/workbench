@@ -5,14 +5,14 @@ export function useScrollMask(element: Ref<HTMLElement | null>) {
     element.value?.dispatchEvent(new Event('scroll'))
   }
 
-  watch(element, (node) => {
+  watch(element, (node, _previous, onCleanup) => {
     if (!node)
       return
     const mutations = new MutationObserver(measure)
     const resizes = new ResizeObserver(measure)
     mutations.observe(node, { childList: true, subtree: true })
     resizes.observe(node)
-    onScopeDispose(() => {
+    onCleanup(() => {
       mutations.disconnect()
       resizes.disconnect()
     })
