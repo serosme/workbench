@@ -12,6 +12,9 @@ export const selfFetch = $fetch.create({
     }
   },
   onRequestError({ error }) {
+    if (error.name === 'AbortError') {
+      return
+    }
     useToast().add({
       color: 'error',
       title: error.name,

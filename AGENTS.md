@@ -26,7 +26,7 @@
 - **书签页两栏在 `GET /api/bookmarks` 与 `GET /api/chat/models` 都返回后才一起渲染**（`v-if="data && chatModels"`，不用 `status`）：否则 Chat 右栏先出现、书签树后补上，两栏不同步，Chat 的模型下拉还要从空再补一跳；用 `data` 判定还能让刷新时旧数据继续显示、不整页闪。**代价是模型接口失败时（provider 挂了 / 没配 key）整页白屏**，而书签数据其实已经拿到；要放宽就把判定写成 `data && (chatModels || chatModelsError)`。
 - **模型列表在页面里请求、以 prop 传给 `ChatPanel`**：`ChatPanel` 挂在 `v-if` 之内，请求写在它里面要等书签返回、组件挂载后才发出，首屏从 `max(书签, 模型)` 退化成两者相加；页面 setup 在 `v-if` 之外，两个请求才并发。**别把 `useSelfFetch('/api/chat/models')` 挪回 `ChatPanel`**。
 - **`selfFetch` / `useSelfFetch` 而不是裸 `$fetch`**：401 跳登录与错误 toast 只有一处实现，业务代码拿到的语义统一（还有 `useSelfFetch` 为什么必须用对象形式，见「类型与跨端契约」）。
-- **fail loudly，不写 `try/catch` 包请求**：`selfFetch` 已全局弹错误 toast，异常自然传播（unhandled rejection 即预期表现），成功路径（emit / refresh / toast）就不会执行；`try/finally` 允许，因为它不吞异常、只用于复位 `moving` / `submitting` 这类状态。
+- **fail loudly，不写 `try/catch` 包请求**：`selfFetch` 已全局弹错误 toast，异常自然传播（unhandled rejection 即预期表现），成功路径（emit / refresh / toast）就不会执行；`try/finally` 允许，因为它不吞异常、只用于复位 `moving` / `submitting` 这类状态。唯一例外是 `selfFetch` 的 `onRequestError` 里 `name === 'AbortError'` 直接 return：`useSelfFetch` 在组件卸载 / 去重 / `enabled: false` 时都会中止在途请求，ofetch 把这次中止也交给 `onRequestError`，不拦就会在切页时弹「AsyncData request cancelled by unmount」这类无意义 toast（`useAsyncData` 自己会吞掉 AbortError 并把状态置回 idle，所以拦掉不会丢真实错误）。
 
 ### 认证
 
