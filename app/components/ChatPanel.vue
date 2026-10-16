@@ -2,12 +2,12 @@
 import type { UIMessage } from 'ai'
 import { useChat } from '@ai-sdk/vue'
 import { isPartStreaming, isToolStreaming } from '@nuxt/ui/utils/ai'
-import { getToolName, isReasoningUIPart, isTextUIPart, isToolUIPart } from 'ai'
+import { DefaultChatTransport, getToolName, isReasoningUIPart, isTextUIPart, isToolUIPart } from 'ai'
 
 const props = defineProps<{ models: ChatModel[] }>()
 
 const input = ref('')
-// 模型列表由页面在渲染前取好（见 pages/bookmarks.vue），这里只落首项当默认
+
 const model = ref(props.models[0]?.value ?? '')
 
 const {
@@ -19,13 +19,12 @@ const {
   regenerate,
   clearError,
 } = useChat({
-  transport: new SmoothChatTransport({
+  transport: new DefaultChatTransport({
     api: '/api/chat',
     body: () => ({ model: model.value }),
   }),
 })
 
-/** 按浏览器本地时间挑问候语 */
 function getGreeting() {
   const hour = new Date().getHours()
 
@@ -38,11 +37,6 @@ function getGreeting() {
   return '晚上好'
 }
 
-/**
- * 还没有真实消息时顶上一条假的 assistant 消息（问候语）。
- * 故意交给同一套 `UChatMessages` + `#content` 槽渲染，所以它和真实回复长得一模一样（左上角、同样样式），
- * 而不会发给模型——`useChat` 的 `messages` 始终是空的。
- */
 const displayMessages = computed<UIMessage[]>(() => messages.value.length
   ? messages.value
   : [{
@@ -93,7 +87,7 @@ function onSubmit() {
               v-else-if="isReasoningUIPart(part)"
               :text="part.text"
               :streaming="isPartStreaming(part)"
-              :ui="{ body: 'max-h-36 scrollbar-none' }"
+              :ui="{ body: 'max-h-32 scrollbar-none' }"
             />
 
             <Markdown
