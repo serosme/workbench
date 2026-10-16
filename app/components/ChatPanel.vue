@@ -87,6 +87,8 @@ function onSubmit() {
               v-else-if="isReasoningUIPart(part)"
               :text="part.text"
               :streaming="isPartStreaming(part)"
+              :auto-open="false"
+              :auto-close-delay="0"
               :ui="{ body: 'max-h-32 scrollbar-none' }"
             />
 
