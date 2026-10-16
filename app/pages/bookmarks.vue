@@ -33,6 +33,9 @@ const contextMenuItems = computed<DropdownMenuItem[][]>(() => {
   return b.type === 'folder' ? getFolderMenu(b) : getBookmarkMenu(b)
 })
 
+const scrollRef = useTemplateRef<HTMLElement>('scrollRef')
+const scrollMask = useScrollMask(scrollRef)
+
 function withContextTokens(items: TreeItem[]): TreeItem[] {
   return items.map(item => ({
     ...item,
@@ -61,7 +64,7 @@ function getItemKey(item: TreeItem): string {
   <div v-if="data && chatModels" class="flex h-full">
     <aside class="flex h-full w-full min-w-0 flex-col pr-0 md:w-[35%] md:pr-6">
       <UContextMenu :items="contextMenuItems" class="block min-h-0 flex-1">
-        <div class="h-full min-h-32 overflow-y-auto scrollbar-none" @contextmenu="openContextMenu">
+        <div ref="scrollRef" class="h-full min-h-32 overflow-y-auto scrollbar-none" :style="scrollMask" @contextmenu="openContextMenu">
           <UTree :items="contextTree" :get-key="getItemKey" :ui="treeLinkUi" size="xl" />
         </div>
       </UContextMenu>

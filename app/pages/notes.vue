@@ -24,6 +24,9 @@ const groups = computed(() => {
 const contextNote = ref<Note>()
 const contextMenuItems = computed<DropdownMenuItem[][]>(() => getMenu(contextNote.value))
 
+const scrollRef = useTemplateRef<HTMLElement>('scrollRef')
+const scrollMask = useScrollMask(scrollRef)
+
 // 模板只能引用 script 里出现过的标识符：只写在模板里的自动导入工具会被 vue-tsc 当成组件属性
 // （Property 'formatDateKey' does not exist on type 'ComponentPublicInstance'），所以在 script 里收口
 const dayLabel = (date: string) => formatDateKey(date)
@@ -38,7 +41,7 @@ function openContextMenu(event: MouseEvent) {
 <template>
   <div class="h-full">
     <UContextMenu :items="contextMenuItems" class="block h-full">
-      <div class="h-full overflow-y-auto scrollbar-none" @contextmenu="openContextMenu">
+      <div ref="scrollRef" class="h-full overflow-y-auto scrollbar-none" :style="scrollMask" @contextmenu="openContextMenu">
         <div class="space-y-6">
           <!-- ring-inset：描边画进卡片内部，避免被滚动容器（overflow 会把 overflow-x 连带变成 auto）裁掉 -->
           <UCard

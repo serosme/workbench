@@ -9,6 +9,9 @@ const { getMenu } = useExpenseMenu(expenseForm, remove)
 const contextExpense = ref<Expense>()
 const contextMenuItems = computed<DropdownMenuItem[][]>(() => getMenu(contextExpense.value))
 
+const scrollRef = useTemplateRef<HTMLElement>('scrollRef')
+const scrollMask = useScrollMask(scrollRef)
+
 // 模板只能引用 script 里出现过的标识符：只写在模板里的自动导入工具会被 vue-tsc 当成组件属性
 // （Property 'formatAmount' does not exist on type 'ComponentPublicInstance'），所以在 script 里收口
 const money = (cents: number) => `¥${formatAmount(cents)}`
@@ -55,7 +58,7 @@ function openContextMenu(event: MouseEvent) {
 <template>
   <div class="h-full">
     <UContextMenu :items="contextMenuItems" class="block h-full">
-      <div class="h-full overflow-y-auto scrollbar-none" @contextmenu="openContextMenu">
+      <div ref="scrollRef" class="h-full overflow-y-auto scrollbar-none" :style="scrollMask" @contextmenu="openContextMenu">
         <div class="space-y-6">
           <section v-for="entry in months" :key="entry.month" class="space-y-6">
             <!-- 月份卡片：显示该月合计 -->

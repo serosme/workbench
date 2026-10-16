@@ -10,6 +10,9 @@ const input = ref('')
 
 const model = ref(props.models[0]?.value ?? '')
 
+const scrollRef = useTemplateRef<HTMLElement>('scrollRef')
+const scrollMask = useScrollMask(scrollRef)
+
 const {
   messages,
   status,
@@ -65,7 +68,7 @@ function onSubmit() {
 
 <template>
   <div class="flex h-full min-h-0 flex-col">
-    <div class="min-h-0 flex-1 overflow-y-auto scrollbar-none">
+    <div ref="scrollRef" class="min-h-0 flex-1 overflow-y-auto scrollbar-none" :style="scrollMask">
       <UChatMessages
         :messages="displayMessages"
         :status="status"
