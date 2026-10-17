@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
   const { authPassword } = useRuntimeConfig()
 
   if (!authPassword || password !== authPassword) {
-    throw createError({ status: 400, message: 'Wrong password' })
+    throw createError({ status: 401, message: 'Wrong password' })
   }
 
   // sameSite 保持 lax：跨站 POST 不带 cookie，是本项目 CSRF 防护的关键，不要改成 'none'
