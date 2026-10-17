@@ -16,7 +16,7 @@ function hasAncestor(list: Bookmark[], candidate: number, ancestorId: number): b
 // 源分组与目标分组各整段重编号，连同 parentId 更新放在同一个 db.batch 里；目标分组的重编号
 // 写到最后，因此同一父级内移动（源与目标同组）也能得到正确顺序。
 export default defineEventHandler<{ body: MoveBookmarkInput }, void>(async (event) => {
-  const { id, parentId } = await readBody<MoveBookmarkInput>(event)
+  const { id, parentId } = await readValidatedBody(event, body => moveBookmarkSchema.parse(body))
   if (parentId === id)
     throw createError({ status: 400, message: 'ParentId cannot be itself' })
 

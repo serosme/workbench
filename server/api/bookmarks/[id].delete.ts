@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
-  const id = Number(getRouterParam(event, 'id'))
+  const id = getNumericId(event)
   const bookmark = await db.select().from(schema.bookmarks).where(eq(schema.bookmarks.id, id)).get()
   if (!bookmark)
     throw createError({ status: 400, message: 'Not found' })
