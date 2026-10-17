@@ -129,6 +129,7 @@ function onSubmit() {
               variant="ghost"
               size="sm"
               square
+              aria-label="Model"
             />
 
             <UButton
@@ -138,6 +139,7 @@ function onSubmit() {
               variant="ghost"
               size="sm"
               square
+              aria-label="New chat"
               :disabled="!messages.length"
               @click="onNewChat"
             />

@@ -7,9 +7,3 @@
     cursor: pointer;
   }
 }
-
-:focus-visible,
-:focus-visible::before,
-:focus-visible::after {
-  outline: none;
-}
