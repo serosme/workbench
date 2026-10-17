@@ -4,7 +4,7 @@ const redirect = computed(() => {
   const r = route.query.redirect
   return typeof r === 'string' && r.startsWith('/') && !r.startsWith('//')
     ? r
-    : '/'
+    : '/bookmarks'
 })
 
 async function onLoggedIn() {
