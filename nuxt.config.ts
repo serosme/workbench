@@ -26,6 +26,9 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: 'Workbench',
+      htmlAttrs: {
+        lang: 'en',
+      },
     },
   },
   icon: {
