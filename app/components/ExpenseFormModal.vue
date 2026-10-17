@@ -17,17 +17,14 @@ const modalTitle = computed(() => isEdit.value ? 'Edit Expense' : 'New Expense')
 
 const formState = reactive({
   item: '',
-  amount: '',
+  amount: null as number | null,
   // 日期在表单里存 "YYYY-MM-DD" 字符串
   spentAt: '',
 })
 
 const formSchema = z.object({
   item: z.string().trim().min(1, 'Item is required'),
-  amount: z.string().refine((value) => {
-    const amount = parseAmount(value)
-    return Number.isFinite(amount) && amount > 0
-  }, 'Amount must be greater than 0'),
+  amount: z.number().min(0.01, 'Amount must be greater than 0'),
   spentAt: z.string().min(1, 'Date is required'),
 })
 
@@ -37,7 +34,7 @@ const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')
 watch(open, (isOpen) => {
   if (isOpen) {
     formState.item = props.item?.item ?? ''
-    formState.amount = props.item ? formatAmount(props.item.amount) : ''
+    formState.amount = props.item ? props.item.amount / 100 : null
     formState.spentAt = toDateKey(props.item?.spentAt ?? Date.now())
   }
 })
@@ -49,7 +46,7 @@ async function handleSubmit() {
   try {
     const body: SaveExpenseInput = {
       item: formState.item.trim(),
-      amount: parseAmount(formState.amount),
+      amount: Math.round((formState.amount ?? 0) * 100),
       spentAt: dateKeyToMs(formState.spentAt),
     }
     if (isEdit.value) {
@@ -78,7 +75,16 @@ async function handleSubmit() {
           <UInput v-model="formState.item" class="w-full" autofocus placeholder="What did you buy?" />
         </UFormField>
         <UFormField label="Amount" name="amount" required>
-          <UInput v-model="formState.amount" class="w-full" type="number" step="0.01" min="0" placeholder="0.00" />
+          <UInputNumber
+            v-model="formState.amount"
+            class="w-full"
+            :min="0"
+            :step="0.01"
+            :increment="false"
+            :decrement="false"
+            :format-options="{ style: 'currency', currency: 'CNY', currencyDisplay: 'narrowSymbol' }"
+            placeholder="0.00"
+          />
         </UFormField>
         <UFormField label="Date" name="spentAt" required>
           <DatePicker v-model="formState.spentAt" />
