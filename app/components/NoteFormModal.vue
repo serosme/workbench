@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FormError } from '@nuxt/ui'
+import { z } from 'zod'
 
 const props = defineProps<{
   item?: Note | null
@@ -22,6 +22,12 @@ const formState = reactive({
   writtenAt: '',
 })
 
+const formSchema = z.object({
+  title: z.string().trim().min(1, 'Title is required'),
+  content: z.string().trim().min(1, 'Content is required'),
+  writtenAt: z.string().min(1, 'Date is required'),
+})
+
 const submitting = ref(false)
 const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')
 
@@ -33,17 +39,6 @@ watch(open, (isOpen) => {
     formState.writtenAt = toDateKey(props.item?.writtenAt ?? Date.now())
   }
 })
-
-function validate(state: typeof formState): FormError<string>[] {
-  const errors: FormError<string>[] = []
-  if (!state.title.trim())
-    errors.push({ name: 'title', message: 'Title is required' })
-  if (!state.content.trim())
-    errors.push({ name: 'content', message: 'Content is required' })
-  if (!state.writtenAt)
-    errors.push({ name: 'writtenAt', message: 'Date is required' })
-  return errors
-}
 
 async function handleSubmit() {
   if (submitting.value)
@@ -77,7 +72,7 @@ async function handleSubmit() {
     :ui="{ content: 'max-w-4xl' }"
   >
     <template #body>
-      <UForm ref="formRef" :state="formState" class="space-y-4" :validate="validate" @submit="handleSubmit">
+      <UForm ref="formRef" :state="formState" :schema="formSchema" class="space-y-4" @submit="handleSubmit">
         <UFormField label="Title" name="title" required>
           <UInput v-model="formState.title" class="w-full" autofocus placeholder="Title" />
         </UFormField>

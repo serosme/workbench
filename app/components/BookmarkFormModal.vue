@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FormError } from '@nuxt/ui'
+import { z } from 'zod'
 
 const props = defineProps<{
   parentId?: number
@@ -22,6 +22,11 @@ const formState = reactive({
   url: '',
 })
 
+const formSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required'),
+  url: z.string().trim().min(1, 'URL is required'),
+})
+
 const submitting = ref(false)
 const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')
 
@@ -31,15 +36,6 @@ watch(open, (isOpen) => {
     formState.url = props.item?.url ?? ''
   }
 })
-
-function validate(state: typeof formState): FormError<string>[] {
-  const errors: FormError<string>[] = []
-  if (!state.name.trim())
-    errors.push({ name: 'name', message: 'Name is required' })
-  if (!state.url.trim())
-    errors.push({ name: 'url', message: 'URL is required' })
-  return errors
-}
 
 async function handleSubmit() {
   if (submitting.value)
@@ -73,7 +69,7 @@ async function handleSubmit() {
 <template>
   <UModal v-model:open="open" :title="title">
     <template #body>
-      <UForm ref="formRef" :state="formState" class="space-y-4" :validate="validate" @submit="handleSubmit">
+      <UForm ref="formRef" :state="formState" :schema="formSchema" class="space-y-4" @submit="handleSubmit">
         <UFormField label="Name" name="name" required>
           <UInput v-model="formState.name" class="w-full" />
         </UFormField>

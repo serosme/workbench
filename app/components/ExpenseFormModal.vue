@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FormError } from '@nuxt/ui'
+import { z } from 'zod'
 
 const props = defineProps<{
   item?: Expense | null
@@ -22,6 +22,15 @@ const formState = reactive({
   spentAt: '',
 })
 
+const formSchema = z.object({
+  item: z.string().trim().min(1, 'Item is required'),
+  amount: z.string().refine((value) => {
+    const amount = parseAmount(value)
+    return Number.isFinite(amount) && amount > 0
+  }, 'Amount must be greater than 0'),
+  spentAt: z.string().min(1, 'Date is required'),
+})
+
 const submitting = ref(false)
 const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')
 
@@ -32,18 +41,6 @@ watch(open, (isOpen) => {
     formState.spentAt = toDateKey(props.item?.spentAt ?? Date.now())
   }
 })
-
-function validate(state: typeof formState): FormError<string>[] {
-  const errors: FormError<string>[] = []
-  if (!state.item.trim())
-    errors.push({ name: 'item', message: 'Item is required' })
-  const amount = parseAmount(state.amount)
-  if (!Number.isFinite(amount) || amount <= 0)
-    errors.push({ name: 'amount', message: 'Amount must be greater than 0' })
-  if (!state.spentAt)
-    errors.push({ name: 'spentAt', message: 'Date is required' })
-  return errors
-}
 
 async function handleSubmit() {
   if (submitting.value)
@@ -76,7 +73,7 @@ async function handleSubmit() {
     :title="modalTitle"
   >
     <template #body>
-      <UForm ref="formRef" :state="formState" class="space-y-4" :validate="validate" @submit="handleSubmit">
+      <UForm ref="formRef" :state="formState" :schema="formSchema" class="space-y-4" @submit="handleSubmit">
         <UFormField label="Item" name="item" required>
           <UInput v-model="formState.item" class="w-full" autofocus placeholder="What did you buy?" />
         </UFormField>
