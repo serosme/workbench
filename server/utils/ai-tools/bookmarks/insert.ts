@@ -12,8 +12,8 @@ Parameters:
 
 The bookmark is appended to the end of the tree, at the root level. This tool only adds: it cannot file the bookmark into a folder, nor edit, move or delete anything — tell the user to do those in the app.`,
   inputSchema: z.object({
-    name: z.string().describe('Display name / title of the bookmark.'),
-    url: z.string().describe('The URL to save.'),
+    name: z.string().trim().min(1).describe('Display name / title of the bookmark.'),
+    url: z.string().trim().min(1).describe('The URL to save.'),
   }),
   execute: async ({ name, url }) => {
     return {

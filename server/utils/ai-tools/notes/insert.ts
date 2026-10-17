@@ -1,6 +1,10 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 
+const dateKeySchema = z.string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine(value => toDateKey(dateKeyToMs(value)) === value)
+
 export const addNote = tool({
   description: `Add a note to the user's notes. Use it when the user asks you to write something down.
 
@@ -13,9 +17,9 @@ Parameters:
 
 This tool only adds: it cannot edit or delete an existing note, so tell the user to do that in the app.`,
   inputSchema: z.object({
-    title: z.string().describe('Note title.'),
-    content: z.string().describe('Note body text.'),
-    writtenDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe('Written date as YYYY-MM-DD; defaults to today.'),
+    title: z.string().trim().min(1).describe('Note title.'),
+    content: z.string().trim().min(1).describe('Note body text.'),
+    writtenDate: dateKeySchema.optional().describe('Written date as YYYY-MM-DD; defaults to today.'),
   }),
   execute: async ({ title, content, writtenDate }) => {
     return {

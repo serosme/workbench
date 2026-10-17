@@ -1,6 +1,10 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 
+const dateKeySchema = z.string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine(value => toDateKey(dateKeyToMs(value)) === value)
+
 export const addExpense = tool({
   description: `Add an expense record. Use it when the user asks you to record or log a purchase.
 
@@ -13,9 +17,9 @@ Parameters:
 
 This tool only adds: it cannot edit or delete an existing expense, so tell the user to do that in the app.`,
   inputSchema: z.object({
-    item: z.string().describe('What the money was spent on.'),
-    amountYuan: z.number().positive().describe('Amount in yuan, e.g. 12.5 for ¥12.50.'),
-    spentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe('Spent date as YYYY-MM-DD; defaults to today.'),
+    item: z.string().trim().min(1).describe('What the money was spent on.'),
+    amountYuan: z.number().min(0.01).describe('Amount in yuan, e.g. 12.5 for ¥12.50.'),
+    spentDate: dateKeySchema.optional().describe('Spent date as YYYY-MM-DD; defaults to today.'),
   }),
   execute: async ({ item, amountYuan, spentDate }) => {
     return {

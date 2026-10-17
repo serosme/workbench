@@ -8,15 +8,21 @@ import {
   streamText,
   toUIMessageStream,
 } from 'ai'
-import { defineEventHandler, readBody, useRuntimeConfig } from 'nuxt/server'
+import { createError, defineEventHandler, readBody, useRuntimeConfig } from 'nuxt/server'
+import { z } from 'zod'
 
-interface ChatBody {
-  messages: UIMessage[]
-  model: string
-}
+const chatBodySchema = z.object({
+  messages: z.array(
+    z.custom<UIMessage>(message => typeof message === 'object' && message !== null && Array.isArray((message as UIMessage).parts)),
+  ).min(1),
+  model: z.string().min(1),
+})
 
 export default defineEventHandler(async (event) => {
-  const { messages, model } = await readBody<ChatBody>(event)
+  const parsed = chatBodySchema.safeParse(await readBody(event))
+  if (!parsed.success)
+    throw createError({ statusCode: 400, message: 'Invalid chat request' })
+  const { messages, model } = parsed.data
   const { chatBaseUrl, chatApiKey } = useRuntimeConfig()
 
   const provider = createOpenAICompatible({
