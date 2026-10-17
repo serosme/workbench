@@ -24,6 +24,11 @@ export default defineEventHandler<{ body: MoveBookmarkInput }, void>(async (even
   const moving = all.find(b => b.id === id)
   if (!moving)
     throw createError({ status: 400, message: 'Not found' })
+  if (parentId !== null) {
+    const parent = all.find(b => b.id === parentId)
+    if (parent?.type !== 'folder')
+      throw createError({ status: 400, message: 'parentId must be an existing folder id' })
+  }
   // 文件夹移进自己的子孙会成环：buildTree 里这些行都成不了 root，整棵子树会从界面消失，
   // 且界面上再也点不到它们，只能改库才能恢复。
   if (moving.type === 'folder' && parentId !== null && hasAncestor(all, parentId, id))

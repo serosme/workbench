@@ -17,10 +17,15 @@ export function buildTree<T extends { id: string | number, parentId: string | nu
 
   const roots: (T & { children: T[] })[] = []
   for (const item of list) {
-    if (item.parentId == null)
-      roots.push(map.get(item.id)!)
-    else
-      map.get(item.parentId)!.children.push(map.get(item.id)!)
+    const node = map.get(item.id)!
+    if (item.parentId != null) {
+      const parent = map.get(item.parentId)
+      if (parent) {
+        parent.children.push(node)
+        continue
+      }
+    }
+    roots.push(node)
   }
 
   return roots
