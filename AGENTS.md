@@ -28,6 +28,7 @@
 - **`selfFetch` / `useSelfFetch` 而不是裸 `$fetch`**：401 跳登录与错误 toast 只有一处实现，业务代码拿到的语义统一（还有 `useSelfFetch` 为什么必须用对象形式，见「类型与跨端契约」）。
 - **`/` 的两套跳转**：`routeRules` 的 307 只处理服务端硬加载；SPA 内部 `navigateTo('/')` 走 `pages/index.vue` 再 replace 到 `/bookmarks`；登录成功的默认跳转直接去 `/bookmarks`，少一跳。
 - **fail loudly，不写 `try/catch` 包请求**：`selfFetch` 已全局弹错误 toast，异常自然传播（unhandled rejection 即预期表现），成功路径（emit / refresh / toast）就不会执行；`try/finally` 允许，因为它不吞异常、只用于复位 `moving` / `submitting` 这类状态。唯一例外是 `selfFetch` 的 `onRequestError` 里 `name === 'AbortError'` 直接 return：`useSelfFetch` 在组件卸载 / 去重 / `enabled: false` 时都会中止在途请求，ofetch 把这次中止也交给 `onRequestError`，不拦就会在切页时弹「AsyncData request cancelled by unmount」这类无意义 toast（`useAsyncData` 自己会吞掉 AbortError 并把状态置回 idle，所以拦掉不会丢真实错误）。
+- **外链书签用 `navigateTo(url, { open: { target: '_blank' } })`，不用 `{ external: true }`**：`external` 的客户端实现是先 `nuxtApp._scope.stop()` 再 `location.href = url`——停 scope 会连带销毁 Nuxt UI colors 插件注入的 `<style id="nuxt-ui-colors">`，于是点书签瞬间整页丢失 primary 配色（绿色变透明/黑、布局不变，见「命令」一节 unhead 那条），而且应用停在屏幕上时响应式已全停；`open` 在函数最前面就走 `window.open()` 并立刻返回，当前标签既不换文档也不停 scope。代价是书签一律新标签打开，这是选定的行为；因此书签右键菜单**不再保留 `Open in New Tab`**（左键就是新标签，留一个同义项纯属重复）。
 
 ### 认证
 
@@ -87,7 +88,7 @@
 - **右键处理器不能 `event.stopPropagation()`**：Reka 的 `ContextMenuTrigger` 要靠事件冒泡到触发元素才会在指针位置打开菜单。笔记行用 `data-note-id` + `closest` 反查，不照搬书签树的 token class 方案（那是 `UTree` 只透传 `item.class` 的变通）。
 - **`DatePicker` 封成只收发 `YYYY-MM-DD` 字符串的组件**：`:reference` 用包住 `UInputDate` 的 `<div>`，不用内部 `inputsRef[...]`（弹窗会压在输入框上）、也不用组件 `$el`（位置跑到视口外）；`UInputDate` 空值 `null`、`UCalendar` 空值 `undefined`，差异在组件内各配一个 computed 消化。
 - **弹窗按钮统一放 `UModal` 的 `#footer`、右对齐**；表单弹窗的按钮不在 `UForm` 内，所以不用 `type="submit"`，而是 `formRef?.submit()` 触发校验链路。`UModal` 没有 `size` prop，宽度只能用 `ui.content` 覆盖（主题默认 `max-w-lg`），冲突交给 tailwind-merge。
-- **菜单分节统一约定**：所有右键菜单都是「上面一组放全部非删除项、最下面单独一组只放 `Delete`」，两组之间就是分隔线；Delete 不与其它项混组。
+- **菜单分节统一约定**：所有右键菜单都是「上面一组放全部非删除项、最下面单独一组只放 `Delete`」，两组之间就是分隔线；Delete 不与其它项混组。组内顺序**书签与文件夹一致**：新建项（仅文件夹菜单有）→ `Edit` → `Move`（`Move` 是项很多的二级菜单，固定放组内最后）。
 - **记账/笔记的 `UCard` 分组**：`root: 'ring-inset'` + `body: '… divide-y divide-default …'`。`ring-inset` 是因为主题默认 `ring ring-default`，而卡片外面就是 overflow 滚动容器、外描边会被裁掉；`divide-y` 只作用于 body 的直接子元素，行之间不用自己加边框；**改内边距必须连 `sm:` 那份一起改**——主题默认 `header: 'p-4 sm:px-6'` / `body: 'p-4 sm:p-6'`，只写 `p-*` / `px-*` 盖不住 `sm:` 那一层。不手写 `ring-default` / `bg-default` 这类语义色 class 拼表面。滚动条统一用 Tailwind 内置 `scrollbar-none` 隐藏（滚动能力仍在）；Toast 用 `useToast()`。
 - **`UChatMessages` 的 `status` 直接透传**：前端不做平滑（见上），流一结束正文就画完了，自动滚动不需要兜底；也别动 `submitted` 的语义——那是「把刚发出的消息滚到顶部」的触发时机。
 - **保留 `:focus-visible` 焦点指示**：`main.css` 不再全局 `outline: none`（Nuxt UI 主题靠 outline 表达焦点）；图标按钮与模型下拉要有可访问名。笔记/记账行保持可点击 `<div>`（鼠标/右键操作），不要改成 `<button>`。
@@ -111,6 +112,7 @@
 - `pnpm dev` 带 `--no-tui`：关掉 Nuxt 4.6 dev 的交互式 TUI，改用普通流式日志；前端改动有 HMR，不用重启。
 - 本地密钥在 `.env`（已 gitignore，模板 `.env.example`）：`NUXT_AUTH_PASSWORD`（登录密码）、`NUXT_APP_SECRET`（≥32 字符，密封 session）、`NUXT_CHAT_BASE_URL`、`NUXT_CHAT_API_KEY`。
 - `pnpm-workspace.yaml` 用 `trustPolicyIgnoreAfter: 1440` 而不是逐个列 `trustPolicyExclude`：只对发布不满 1440 分钟的新版本做 trust 校验，绕过 cssnano / postcss-* 家族换发布流程造成的 no-downgrade 误报（该值只能是整数分钟，写 `1d` 会报 `invalid u64`）。`minimumReleaseAgeExclude` 列本次升级引入的新版本以绕过发布等待期，配 `minimumReleaseAgeExcludePrune: true` 让 pnpm 自动清理失效条目、不用手工维护名单。
+- **不要写 `navigateTo(url, { external: true })`（任何会让 Nuxt 停掉 app scope 的硬跳转同理）**：它在跳转前先执行 `nuxtApp._scope.stop()`，而 unhead 3.4.3 起 scope 停止会连带销毁 Nuxt UI `colors` 插件用 `useHead` 注册的 `<style id="nuxt-ui-colors">`——`--ui-primary` / `--ui-color-*` 只在这个 style 里，没了就只剩静态 CSS，于是整页丢 primary 配色（绿色变透明/黑、布局不变），而且页面还停在屏幕上时响应式已全停。外链一律走 `navigateTo(url, { open: { target: '_blank' } })`（见「渲染与取数」），所以当前没有 `external: true` 调用点，也就**没有**再给 unhead 加 `overrides`；将来真需要同标签硬跳转时，先把 `unhead` / `@unhead/vue` 钉回 3.4.2（`pnpm-workspace.yaml` 的 `overrides`）。验证方法：控制台执行 `document.querySelector('#__nuxt').__vue_app__.config.globalProperties.$nuxt._scope.stop()`，3.4.3 会让 `getComputedStyle(document.documentElement).getPropertyValue('--ui-primary')` 变空、该 style 从 1 变 0；3.4.2 不受影响。
 
 ## 部署（Cloudflare Workers + D1）
 

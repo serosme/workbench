@@ -21,12 +21,12 @@ export function useFolderMenu(
           icon: 'i-lucide-bookmark-plus',
           onSelect() { bookmarkForm.openCreate(b.id) },
         },
-        moveMenuItem(b, reorder, moveForm),
         {
           label: 'Edit',
           icon: 'i-lucide-pencil',
           onSelect() { folderForm.openEdit(b) },
         },
+        moveMenuItem(b, reorder, moveForm),
       ],
       [
         {

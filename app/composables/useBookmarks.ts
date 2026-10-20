@@ -7,7 +7,7 @@ function toTreeItem(b: Bookmark) {
     label: b.name,
     icon: b.type === 'folder' ? 'i-lucide-folder' : 'i-lucide-bookmark',
     onSelect: b.type === 'bookmark' && b.url
-      ? () => navigateTo(b.url!, { external: true })
+      ? () => navigateTo(b.url!, { open: { target: '_blank' } })
       : undefined,
   }
 }
