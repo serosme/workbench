@@ -16,15 +16,15 @@ const isEdit = computed(() => !!props.item)
 const modalTitle = computed(() => isEdit.value ? 'Edit Expense' : 'New Expense')
 
 const formState = reactive({
-  item: '',
   amount: null as number | null,
+  item: '',
   // 日期在表单里存 "YYYY-MM-DD" 字符串
   spentAt: '',
 })
 
 const formSchema = z.object({
-  item: z.string().trim().min(1, 'Item is required'),
   amount: z.number().min(0.01, 'Amount must be greater than 0'),
+  item: z.string().trim().min(1, 'Item is required'),
   spentAt: z.string().min(1, 'Date is required'),
 })
 
@@ -71,13 +71,11 @@ async function handleSubmit() {
   >
     <template #body>
       <UForm ref="formRef" :state="formState" :schema="formSchema" class="space-y-4" @submit="handleSubmit">
-        <UFormField label="Item" name="item" required>
-          <UInput v-model="formState.item" class="w-full" autofocus placeholder="What did you buy?" />
-        </UFormField>
         <UFormField label="Amount" name="amount" required>
           <UInputNumber
             v-model="formState.amount"
             class="w-full"
+            autofocus
             :min="0"
             :step="0.01"
             :increment="false"
@@ -85,6 +83,9 @@ async function handleSubmit() {
             :format-options="{ style: 'currency', currency: 'CNY', currencyDisplay: 'narrowSymbol' }"
             placeholder="0.00"
           />
+        </UFormField>
+        <UFormField label="Item" name="item" required>
+          <UInput v-model="formState.item" class="w-full" placeholder="What did you buy?" />
         </UFormField>
         <UFormField label="Date" name="spentAt" required>
           <DatePicker v-model="formState.spentAt" />
