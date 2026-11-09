@@ -9,7 +9,7 @@ export default defineNuxtConfig({
     strictRouteTypes: true,
   },
   runtimeConfig: {
-    authPassword: '',
+    appPassword: '',
   },
   css: ['~/assets/css/main.css'],
   ui: {

@@ -109,7 +109,7 @@
 
 - 包管理器 `pnpm`；无测试框架、无 CI 配置（`pnpm lint` + `pnpm typecheck` 就是全部校验）。
 - `pnpm dev` 带 `--no-tui`：关掉 Nuxt 4.6 dev 的交互式 TUI，改用普通流式日志；前端改动有 HMR，不用重启。
-- 本地密钥在 `.env`（已 gitignore，模板 `.env.example`）：`NUXT_AUTH_PASSWORD`（登录密码）、`NUXT_APP_SECRET`（≥32 字符，密封 session）。
+- 本地密钥在 `.env`（已 gitignore，模板 `.env.example`）：`NUXT_APP_PASSWORD`（登录密码）、`NUXT_APP_SECRET`（≥32 字符，密封 session）。两者都映射到 `runtimeConfig.appPassword` / `appSecret`。
 - `pnpm-workspace.yaml` 用 `trustPolicyIgnoreAfter: 1440` 而不是逐个列 `trustPolicyExclude`：只对发布不满 1440 分钟的新版本做 trust 校验，绕过 cssnano / postcss-* 家族换发布流程造成的 no-downgrade 误报（该值只能是整数分钟，写 `1d` 会报 `invalid u64`）。`minimumReleaseAgeExclude` 列本次升级引入的新版本以绕过发布等待期，配 `minimumReleaseAgeExcludePrune: true` 让 pnpm 自动清理失效条目、不用手工维护名单。
 - **不要写 `navigateTo(url, { external: true })`（任何会让 Nuxt 停掉 app scope 的硬跳转同理）**：它在跳转前先执行 `nuxtApp._scope.stop()`，而 unhead 3.4.3 起 scope 停止会连带销毁 Nuxt UI `colors` 插件用 `useHead` 注册的 `<style id="nuxt-ui-colors">`——`--ui-primary` / `--ui-color-*` 只在这个 style 里，没了就只剩静态 CSS，于是整页丢 primary 配色（绿色变透明/黑、布局不变），而且页面还停在屏幕上时响应式已全停。外链一律走 `navigateTo(url, { open: { target: '_blank' } })`（见「渲染与取数」），所以当前没有 `external: true` 调用点，也就**没有**再给 unhead 加 `overrides`；将来真需要同标签硬跳转时，先把 `unhead` / `@unhead/vue` 钉回 3.4.2（`pnpm-workspace.yaml` 的 `overrides`）。验证方法：控制台执行 `document.querySelector('#__nuxt').__vue_app__.config.globalProperties.$nuxt._scope.stop()`，3.4.3 会让 `getComputedStyle(document.documentElement).getPropertyValue('--ui-primary')` 变空、该 style 从 1 变 0；3.4.2 不受影响。
 
@@ -117,7 +117,7 @@
 
 - `pnpm deploy` 一条链：`NITRO_PRESET=cloudflare_module` 构建 → `wrangler deploy --keep-vars` → `wrangler --config .output/server/wrangler.json d1 migrations apply DB --remote`。迁移命令必须显式 `--config`（`migrations_dir` 相对该文件解析）；worker 名与 D1 绑定（按 `database_name`，不用维护 UUID）都在 `wrangler.jsonc`，构建时 nitro 合并到 `.output/server/wrangler.json`。
 - `workers_dev` / `preview_urls` 都是 `false`：不对外暴露 `*.workers.dev`，需要自定义域名 / route 才能访问。
-- 生产密钥用 `wrangler secret put`（`NUXT_AUTH_PASSWORD`、`NUXT_APP_SECRET`）：与本地 `.env` 独立，`--keep-vars` 不覆盖 secrets。前提是 wrangler 已认证（`wrangler login` 或 `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`）。
+- 生产密钥用 `wrangler secret put`（`NUXT_APP_PASSWORD`、`NUXT_APP_SECRET`）：与本地 `.env` 独立，`--keep-vars` 不覆盖 secrets。前提是 wrangler 已认证（`wrangler login` 或 `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`）。
 - **CPU 限制**：Workers Free 每请求只有 10ms CPU（Paid 默认 30s，`limits.cpu_ms` 最多 5 分钟；Free 上写该字段部署报 error 100328），但 isolate 对偶尔超限有弹性额度（实测超限事故要 ~2.0s CPU 才被终止），所以本地跑得动不代表线上跑得动。排查入口：Workers Logs 的 `cpuTimeMs` / `wallTimeMs` / `outcome`，或 dashboard 的 Metrics → Errors → Invocation Statuses 里的 `Exceeded CPU Time Limits`。
 - **R2 bucket 要先建**：`wrangler r2 bucket create workbench-r2`（`wrangler.jsonc` 的 `r2_buckets` 按名绑定到 `BLOB`，bucket 不存在时部署会报绑定解析失败）。它是生产环境的文件存储，本地 `.data/blob` 不会同步过去。
 - 开发用本地 SQLite（`.data/db/sqlite.db`，`@nuxthub/core` 自动处理、无需环境变量），生产 D1 由 `NITRO_PRESET=cloudflare_module` 让 `hub.db` 切到 `d1` driver；d1 binding 模式不需要 `NUXT_HUB_CLOUDFLARE_*`（那是 `d1-http` driver 才需要）。Drizzle Kit 无独立配置，迁移文件在 `server/db/migrations/sqlite/`。
