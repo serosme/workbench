@@ -14,8 +14,9 @@ const { getMenu: getFolderMenu } = useFolderMenu(bookmarkForm, folderForm, moveF
 // 右栏文件树：上传弹窗只负责 UI，upload 由页面注入（弹窗内再调一次 useFiles 会重复请求同一个接口）
 const { tree: fileTree, ready: filesReady, upload: uploadFile, refresh: refreshFiles } = useFiles()
 const fileUploadForm = useFileUploadForm()
+const filePreview = useFilePreview()
 const { remove: removeFile } = useDeleteFile(refreshFiles)
-const { getMenu: getFileMenu } = useFileMenu(fileUploadForm, removeFile)
+const { getMenu: getFileMenu } = useFileMenu(fileUploadForm, filePreview, removeFile)
 
 // 移动弹窗的目标树：所有文件夹（移动文件夹时由 buildFolderTree 剪掉自己与整棵子树），根级由弹窗补在最前面。
 const moveTargets = computed(() => buildFolderTree(data.value ?? [], moveForm.modal.item ?? undefined))
@@ -99,6 +100,11 @@ function getItemKey(item: TreeItem): string {
       :default-path="fileUploadForm.modal.defaultPath"
       :upload="uploadFile"
       @saved="refreshFiles"
+    />
+    <FilePreviewModal
+      v-model:open="filePreview.modal.open"
+      :path="filePreview.modal.path"
+      :content="filePreview.modal.content"
     />
   </div>
 </template>

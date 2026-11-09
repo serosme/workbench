@@ -1,7 +1,13 @@
 import type { DropdownMenuItem } from '@nuxt/ui'
 
+// 只有明显是二进制的类型才不给 Preview：压缩包 / 图片 / 音视频点开必然吃 415（服务端靠前 8KB 的 NUL 字节判定）。
+// 放行 `application/octet-stream` 是刻意的：`.env` / `Makefile` 这类按扩展名推不出类型的，driver 一律给 octet-stream，
+// 它们其实是纯文本；反过来的 `.bin` 之类会落到 415，交给服务端兜底。
+const BINARY_TYPE = /^(?:image|video|audio|font)\/|^application\/(?:pdf|zip|x-zip-compressed|gzip|x-gzip|x-tar|x-7z-compressed|x-rar-compressed|x-bzip2|wasm|vnd\.)/
+
 export function useFileMenu(
   uploadForm: ReturnType<typeof useFileUploadForm>,
+  preview: ReturnType<typeof useFilePreview>,
   remove: (path: string, type: FileTreeNode['type']) => Promise<void>,
 ) {
   const toast = useToast()
@@ -41,14 +47,22 @@ export function useFileMenu(
     }
 
     if (node?.type === 'file') {
+      const items: DropdownMenuItem[] = []
+      if (!BINARY_TYPE.test(node.contentType ?? '')) {
+        items.push({
+          label: 'Preview',
+          icon: 'i-lucide-eye',
+          onSelect() { preview.open(node) },
+        })
+      }
+      items.push({
+        label: 'Download File',
+        icon: 'i-lucide-download',
+        onSelect() { download(node) },
+      })
+
       return [
-        [
-          {
-            label: 'Download File',
-            icon: 'i-lucide-download',
-            onSelect() { download(node) },
-          },
-        ],
+        items,
         [
           {
             label: 'Delete File',
