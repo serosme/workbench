@@ -61,7 +61,7 @@ function getItemKey(item: TreeItem): string {
   <!-- 左书签与右文件树的请求都落地后才渲染两栏（不然两栏会先后出现、不同步），
        不用 status 判定：刷新时旧数据还在、不整页闪。两个请求在 setup 里并发发出，等待时间是两者的较大者。 -->
   <div v-if="data && filesReady" class="flex h-full">
-    <aside class="flex h-full w-full min-w-0 flex-col pr-0 md:w-2/5 md:pr-6">
+    <aside class="flex h-full w-full min-w-0 flex-col pr-0 md:w-1/2 md:pr-6">
       <UContextMenu :items="contextMenuItems" class="block min-h-0 flex-1">
         <div ref="scrollRef" class="h-full min-h-32 overflow-y-auto scrollbar-none" :style="scrollMask" @contextmenu="openContextMenu">
           <UTree :items="contextTree" :get-key="getItemKey" :ui="treeNavUi" size="xl" />
@@ -70,7 +70,7 @@ function getItemKey(item: TreeItem): string {
     </aside>
 
     <!-- 右栏是文件树：空白处右键上传，节点右键下载 / 删除 -->
-    <section class="hidden h-full min-w-0 flex-1 flex-col border-l border-default pl-6 md:flex">
+    <section class="hidden h-full min-w-0 flex-1 flex-col pl-6 md:flex">
       <FileTree :items="fileTree" :get-menu="getFileMenu" />
     </section>
 

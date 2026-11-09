@@ -23,7 +23,7 @@
 
 ### 渲染与取数
 
-- **书签页两栏等两边请求都落地才一起渲染**（`v-if="data && filesReady"`，不用 `status`）：否则两栏会先后出现、不同步。`data` 还在时刷新不整页闪；`filesReady` 由 `useFiles` 给（`data !== undefined || error !== undefined`），**不用 `status !== 'pending'`**——上传成功后的 refresh 会把 status 短暂置回 pending，那会把整页收起来；**也不能只看 `data`**，否则文件接口挂掉（R2 绑定缺失等）时整页永远空白。两个请求在 setup 里并发发出，等待时间是两者的较大者。左栏 `md:w-2/5` 放书签树，右栏 `hidden md:flex md:flex-1` 放文件树（两栏 4:6），所以移动端只有书签树。
+- **书签页两栏等两边请求都落地才一起渲染**（`v-if="data && filesReady"`，不用 `status`）：否则两栏会先后出现、不同步。`data` 还在时刷新不整页闪；`filesReady` 由 `useFiles` 给（`data !== undefined || error !== undefined`），**不用 `status !== 'pending'`**——上传成功后的 refresh 会把 status 短暂置回 pending，那会把整页收起来；**也不能只看 `data`**，否则文件接口挂掉（R2 绑定缺失等）时整页永远空白。两个请求在 setup 里并发发出，等待时间是两者的较大者。左栏 `md:w-1/2` 放书签树，右栏 `hidden md:flex md:flex-1` 放文件树（两栏 1:1、中间不画分割线，靠两栏各自的 `pr-6` / `pl-6` 留白区分），所以移动端只有书签树。
 - **`selfFetch` / `useSelfFetch` 而不是裸 `$fetch`**：401 跳登录与错误 toast 只有一处实现，业务代码拿到的语义统一（还有 `useSelfFetch` 为什么必须用对象形式，见「类型与跨端契约」）。
 - **`/` 的两套跳转**：`routeRules` 的 307 只处理服务端硬加载；SPA 内部 `navigateTo('/')` 走 `pages/index.vue` 再 replace 到 `/bookmarks`；登录成功的默认跳转直接去 `/bookmarks`，少一跳。
 - **fail loudly，不写 `try/catch` 包请求**：`selfFetch` 已全局弹错误 toast，异常自然传播（unhandled rejection 即预期表现），成功路径（emit / refresh / toast）就不会执行；`try/finally` 允许，因为它不吞异常、只用于复位 `moving` / `submitting` 这类状态。唯一例外是 `selfFetch` 的 `onRequestError` 里 `name === 'AbortError'` 直接 return：`useSelfFetch` 在组件卸载 / 去重 / `enabled: false` 时都会中止在途请求，ofetch 把这次中止也交给 `onRequestError`，不拦就会在切页时弹「AsyncData request cancelled by unmount」这类无意义 toast（`useAsyncData` 自己会吞掉 AbortError 并把状态置回 idle，所以拦掉不会丢真实错误）。
