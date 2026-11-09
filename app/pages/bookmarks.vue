@@ -11,13 +11,14 @@ const reorder = useReorderBookmarks(data, refresh)
 const { getMenu: getBookmarkMenu } = useBookmarkMenu(bookmarkForm, moveForm, removeBookmark, reorder)
 const { getMenu: getFolderMenu } = useFolderMenu(bookmarkForm, folderForm, moveForm, removeFolder, reorder)
 
+// 右栏文件树：上传弹窗只负责 UI，upload 由页面注入（弹窗内再调一次 useFiles 会重复请求同一个接口）
+const { tree: fileTree, ready: filesReady, upload: uploadFile, refresh: refreshFiles } = useFiles()
+const fileUploadForm = useFileUploadForm()
+const { remove: removeFile } = useDeleteFile(refreshFiles)
+const { getMenu: getFileMenu } = useFileMenu(fileUploadForm, removeFile)
+
 // 移动弹窗的目标树：所有文件夹（移动文件夹时由 buildFolderTree 剪掉自己与整棵子树），根级由弹窗补在最前面。
 const moveTargets = computed(() => buildFolderTree(data.value ?? [], moveForm.modal.item ?? undefined))
-
-const treeLinkUi = {
-  link: 'hover:text-inherit hover:before:bg-transparent before:bg-inherit text-inherit',
-  linkTrailingIcon: 'hidden',
-}
 
 const contextBookmark = ref<Bookmark>()
 const contextMenuItems = computed<DropdownMenuItem[][]>(() => {
@@ -57,18 +58,21 @@ function getItemKey(item: TreeItem): string {
 </script>
 
 <template>
-  <!-- 用 data 而不是 status：刷新时（data 还在）不闪，也不用为「已加载但为空」另写分支。 -->
-  <div v-if="data" class="flex h-full">
-    <aside class="flex h-full w-full min-w-0 flex-col pr-0 md:w-[35%] md:pr-6">
+  <!-- 左书签与右文件树的请求都落地后才渲染两栏（不然两栏会先后出现、不同步），
+       不用 status 判定：刷新时旧数据还在、不整页闪。两个请求在 setup 里并发发出，等待时间是两者的较大者。 -->
+  <div v-if="data && filesReady" class="flex h-full">
+    <aside class="flex h-full w-full min-w-0 flex-col pr-0 md:w-2/5 md:pr-6">
       <UContextMenu :items="contextMenuItems" class="block min-h-0 flex-1">
         <div ref="scrollRef" class="h-full min-h-32 overflow-y-auto scrollbar-none" :style="scrollMask" @contextmenu="openContextMenu">
-          <UTree :items="contextTree" :get-key="getItemKey" :ui="treeLinkUi" size="xl" />
+          <UTree :items="contextTree" :get-key="getItemKey" :ui="treeNavUi" size="xl" />
         </div>
       </UContextMenu>
     </aside>
 
-    <!-- 右栏先留空，后续放文件树 -->
-    <section class="hidden h-full min-w-0 flex-1 border-l border-default pl-6 md:block" />
+    <!-- 右栏是文件树：空白处右键上传，节点右键下载 / 删除 -->
+    <section class="hidden h-full min-w-0 flex-1 flex-col border-l border-default pl-6 md:flex">
+      <FileTree :items="fileTree" :get-menu="getFileMenu" />
+    </section>
 
     <BookmarkFormModal
       v-model:open="bookmarkForm.modal.open"
@@ -89,6 +93,12 @@ function getItemKey(item: TreeItem): string {
       :item="moveForm.modal.item"
       :targets="moveTargets"
       @moved="refresh"
+    />
+    <FileUploadModal
+      v-model:open="fileUploadForm.modal.open"
+      :default-path="fileUploadForm.modal.defaultPath"
+      :upload="uploadFile"
+      @saved="refreshFiles"
     />
   </div>
 </template>

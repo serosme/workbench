@@ -17,6 +17,7 @@ export default defineNuxtConfig({
   },
   hub: {
     db: 'sqlite',
+    blob: true,
   },
   routeRules: {
     '/': { redirect: '/bookmarks' },
@@ -33,7 +34,7 @@ export default defineNuxtConfig({
     provider: 'none',
     clientBundle: {
       scan: {
-        globInclude: ['**/*.{vue,jsx,tsx,ts,md,mdc,mdx,yml,yaml}'],
+        globInclude: ['**/*.{vue,ts}'],
       },
     },
   },

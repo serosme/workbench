@@ -43,3 +43,8 @@ export const saveExpenseSchema = z.object({
   amount: z.number().int().positive(),
   spentAt: z.number().int().nonnegative(),
 })
+
+// 文件路径（删除 / 下载的 query）：只拦空值，路径本身的合法性（`..`、控制字符）由 `blob.*` 内部的 assertValidPathname 负责
+export const filePathQuerySchema = z.object({
+  path: z.string().trim().min(1),
+})

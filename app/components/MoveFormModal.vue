@@ -21,7 +21,7 @@ const formState = reactive<{ target: number | null }>({
 
 const submitting = ref(false)
 
-// 底色和书签页主树一样去掉（页面那份见 bookmarks.vue 的 treeLinkUi），但这里是选择器、必须能看出选的是哪个：
+// 底色和书签页主树一样去掉（导航树的共用定义在 app/utils/tree-ui.ts 的 treeNavUi），但这里是选择器、必须能看出选的是哪个：
 // 所以选中的那一行保留文字变色（aria-selected 由 UTree 打在节点上），悬停不上色、免得和选中混淆。
 // 这棵树只用来选目标：不折叠，所以隐藏展开/折叠箭头。
 const treeLinkUi = {
