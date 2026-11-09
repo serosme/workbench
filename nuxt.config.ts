@@ -1,7 +1,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-05',
   devtools: { enabled: true },
-  modules: ['@nuxthub/core', '@nuxt/ui', '@comark/nuxt'],
+  modules: ['@nuxthub/core', '@nuxt/ui'],
   ssr: false,
   experimental: {
     typedPages: true,
@@ -10,8 +10,6 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     authPassword: '',
-    chatBaseUrl: '',
-    chatApiKey: '',
   },
   css: ['~/assets/css/main.css'],
   ui: {
