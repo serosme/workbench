@@ -11,7 +11,7 @@ export function useFiles() {
   const tree = computed(() => buildFileTree(data.value ?? []))
 
   // key 形如 `documents/photos/a.png`：最后一段是文件名，前面是目录，目录通过 prefix 交给分片上传的 create
-  const upload = async (key: string, file: File, onProgress?: (percent: number) => void) => {
+  const upload = async (key: string, file: File) => {
     const prefix = key.split('/').slice(0, -1).join('/')
 
     const multipart = useMultipartUpload('/api/files/multipart', {
@@ -22,14 +22,7 @@ export function useFiles() {
       prefix,
     })
 
-    const chunks = Math.max(1, Math.ceil(file.size / PART_SIZE))
-    const { completed, progress } = multipart(file)
-    // 库上报的是「已完成片数 / 总片数」，而且是先赋值再 push（滞后一片）：按片数换算成正在传的这一片，
-    // 否则小于一片的文件全程 0%、多片文件最多停在 (n-1)/n
-    const stopProgress = watch(progress, (percent) => {
-      const part = Math.floor(percent / 100 * chunks) + 1
-      onProgress?.(Math.round(part / chunks * 100))
-    })
+    const { completed } = multipart(file)
 
     try {
       // 库在重试耗尽后是 catch 后直接 return，completed 只会 resolve（成功是 complete 的返回值，失败是 undefined），
@@ -42,10 +35,6 @@ export function useFiles() {
       // 这里显式报一次再抛出，弹窗靠 reject 保持打开、submitting 由 finally 复位。
       toast.add({ color: 'error', title: 'Upload failed' })
       throw error
-    }
-    finally {
-      // watch 建在事件处理器的调用栈里（不在 setup 作用域），不会随组件销毁自动停止，用完手动停
-      stopProgress()
     }
   }
 

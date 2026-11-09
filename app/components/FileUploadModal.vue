@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   defaultPath: string
-  upload: (key: string, file: File, onProgress?: (percent: number) => void) => Promise<void>
+  upload: (key: string, file: File) => Promise<void>
 }>()
 
 const emit = defineEmits<{
@@ -13,7 +13,6 @@ const open = defineModel<boolean>('open', { required: true })
 const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
 const file = ref<File>()
 const path = ref('')
-const progress = ref(0)
 const submitting = ref(false)
 const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')
 
@@ -21,7 +20,6 @@ watch(open, (isOpen) => {
   if (isOpen) {
     path.value = props.defaultPath
     file.value = undefined
-    progress.value = 0
   }
 })
 
@@ -40,11 +38,8 @@ async function handleSubmit() {
   if (!file.value || submitting.value)
     return
   submitting.value = true
-  progress.value = 0
   try {
-    await props.upload(target.value, file.value, (percent) => {
-      progress.value = Math.round(percent)
-    })
+    await props.upload(target.value, file.value)
     emit('saved')
     open.value = false
   }
@@ -81,14 +76,6 @@ async function handleSubmit() {
         <UFormField label="Full Path">
           <UInput :model-value="target" class="w-full" readonly />
         </UFormField>
-        <div v-if="submitting" class="space-y-1">
-          <div class="h-1.5 w-full overflow-hidden rounded-full bg-elevated">
-            <div class="h-full rounded-full bg-primary transition-all" :style="{ width: `${progress}%` }" />
-          </div>
-          <p class="text-xs text-muted">
-            {{ progress }}%
-          </p>
-        </div>
       </UForm>
     </template>
     <template #footer>
