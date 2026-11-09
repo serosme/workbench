@@ -28,8 +28,6 @@ function buildTreeItems(items: FileTreeNode[]): { items: TreeItem[], nodes: Map<
       label: node.label,
       icon: node.type === 'folder' ? 'i-lucide-folder' : 'i-lucide-file',
       class: tokenClass,
-      // 带上去，模板的 #item-trailing 靠它显示大小
-      size: node.size,
       ...(node.children ? { children: walk(node.children) } : {}),
     }
   })
@@ -47,21 +45,12 @@ function openContextMenu(event: MouseEvent) {
 function getKey(item: TreeItem): string {
   return String(item.key)
 }
-
-// 模板里只出现这个包一层，避免把自动导入的 formatBytes 直接写进模板（vue-tsc 会把它当组件属性）
-function sizeLabel(size?: number) {
-  return size === undefined ? '' : formatBytes(size)
-}
 </script>
 
 <template>
   <UContextMenu :items="contextItems" class="block min-h-0 flex-1">
     <div ref="scrollRef" class="h-full min-h-32 overflow-y-auto scrollbar-none" :style="scrollMask" @contextmenu="openContextMenu">
-      <UTree :items="tree.items" :get-key="getKey" :ui="treeNavUi" size="xl">
-        <template #item-trailing="{ item }">
-          <span v-if="item.size" class="text-xs text-muted">{{ sizeLabel(item.size) }}</span>
-        </template>
-      </UTree>
+      <UTree :items="tree.items" :get-key="getKey" :ui="treeNavUi" size="xl" />
     </div>
   </UContextMenu>
 </template>

@@ -68,7 +68,7 @@
 - **上传弹窗只收「路径前缀 + 文件」，key = `prefix/文件名`**：新增的层级不需要预先存在，上传后自然出现在树里——这就是「新建文件夹」的替代（不做单独的建目录接口）。在文件夹上上传时前缀默认是该文件夹的 key，用户可以继续追加。上传期间路径输入与选择按钮都 `:disabled="submitting"`，避免中途改 key。
 - **`upload` 由页面注入弹窗（`:upload` prop），不要在弹窗里再调 `useFiles()`**：两个组件各调一次会在同一 key 上重复发起 `useSelfFetch('/api/files')`，Nuxt 去重会取消其中一个并抛 `AbortError: AsyncData request cancelled by deduplication`。
 - **文件树右键靠 token class 定位节点**（与书签树同一套手法）：`UTree` 只透传 `item.class` 到带 `data-slot="link"` 的元素，所以 `FileTree.vue` 组树时给每个节点挂 `file-node-<n>` 并建 token → node 的 Map，`@contextmenu` 里 `closest('[data-slot="link"]')` 读类名反查；拿不到类名就当成空白处（弹根级上传菜单）。文件图标不区分扩展名，统一 `i-lucide-file` / `i-lucide-folder`。
-- **文件树是书签页右栏的一个组件，不是独立页面**：它自己管自己的滚动容器与 `useScrollMask`，外观与书签树一致（两处共用 `app/utils/tree-ui.ts` 的 `treeNavUi`），所以两栏看起来是一套树；文件行还会在 trailing 区显示大小（`#item-trailing` + `formatBytes`）；`PageNav` 只有书签 / 笔记 / 记账三项。
+- **文件树是书签页右栏的一个组件，不是独立页面**：它自己管自己的滚动容器与 `useScrollMask`，外观与书签树一致（两处共用 `app/utils/tree-ui.ts` 的 `treeNavUi`），所以两栏看起来是一套树；`PageNav` 只有书签 / 笔记 / 记账三项。
 
 ### 类型与跨端契约
 
