@@ -17,7 +17,7 @@ const scrollMask = useScrollMask(scrollRef)
   <UModal v-model:open="open" :title="name" :ui="{ content: 'max-w-4xl' }">
     <template #body>
       <div ref="scrollRef" class="max-h-[70dvh] overflow-auto scrollbar-none" :style="scrollMask">
-        <pre v-if="content" class="font-mono text-sm whitespace-pre-wrap break-words">{{ content }}</pre>
+        <pre v-if="content" class="font-mono text-sm whitespace-pre-wrap wrap-break-word">{{ content }}</pre>
         <p v-else class="text-sm text-muted">
           Empty file
         </p>
