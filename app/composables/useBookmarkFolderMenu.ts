@@ -1,14 +1,10 @@
 import type { DropdownMenuItem } from '@nuxt/ui'
 
-export function useFolderMenu(
-  bookmarkForm: ReturnType<typeof useBookmarkForm>,
-  folderForm: ReturnType<typeof useBookmarkForm>,
-  moveForm: ReturnType<typeof useMoveForm>,
-  remove: (id: number) => Promise<void>,
-  reorder: ReturnType<typeof useReorderBookmarks>,
+export function useBookmarkFolderMenu(
+  { bookmarkForm, folderForm, moveForm, bookmarkMove, remove }:
+  BookmarkMenuDeps & { folderForm: ReturnType<typeof useBookmarkForm> },
 ) {
   function getMenu(b: Bookmark): DropdownMenuItem[][] {
-    // 所有非删除项放上面一组；Delete 单独放最下一组（菜单分节统一约定，见 AGENTS.md）
     return [
       [
         {
@@ -26,7 +22,12 @@ export function useFolderMenu(
           icon: 'i-lucide-pencil',
           onSelect() { folderForm.openEdit(b) },
         },
-        moveMenuItem(b, reorder, moveForm),
+        moveMenuItem(b, {
+          canMove: bookmarkMove.canMove,
+          move: bookmarkMove.move,
+          moving: bookmarkMove.moving.value,
+          openMove: moveForm.openMove,
+        }),
       ],
       [
         {

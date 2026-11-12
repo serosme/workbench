@@ -1,5 +1,5 @@
 export function useNotes() {
-  const { data, refresh } = useSelfFetch('/api/notes', {
+  const { data, refresh } = useApiFetch('/api/notes', {
     default: () => [],
   })
 

@@ -1,13 +1,12 @@
 <script setup lang="ts">
 const props = defineProps<{
-  path: string
+  pathname: string
   content: string
 }>()
 
 const open = defineModel<boolean>('open', { required: true })
 
-// 标题只放文件名：完整 path 在文件树里已经看得到，长路径会把标题挤掉
-const name = computed(() => props.path.split('/').pop() ?? props.path)
+const name = computed(() => props.pathname.split('/').pop() ?? props.pathname)
 
 const scrollRef = useTemplateRef<HTMLElement>('scrollRef')
 const scrollMask = useScrollMask(scrollRef)

@@ -7,41 +7,21 @@ const props = defineProps<{
 }>()
 
 const contextNode = ref<FileTreeNode>()
-const tree = computed(() => buildTreeItems(props.items))
+const tree = computed(() => withNodeTokens(props.items, (node, tokenClass) => ({
+  key: node.pathname,
+  label: node.label,
+  icon: node.type === 'folder' ? 'i-lucide-folder' : 'i-lucide-file',
+  class: tokenClass,
+})))
 const contextItems = computed(() => props.getMenu(contextNode.value))
 
 const scrollRef = useTemplateRef<HTMLElement>('scrollRef')
 const scrollMask = useScrollMask(scrollRef)
 
-// UTree 只把 item.class 透传到带 data-slot="link" 的元素上（不转发任意属性），所以组树时给每个节点挂一个
-// token class，并同时建 token → node 的 Map，右键时读类名反查节点
-function buildTreeItems(items: FileTreeNode[]): { items: TreeItem[], nodes: Map<string, FileTreeNode> } {
-  const nodes = new Map<string, FileTreeNode>()
-  let token = 0
-
-  const walk = (list: FileTreeNode[]): TreeItem[] => list.map((node) => {
-    const tokenClass = `file-node-${token++}`
-    nodes.set(tokenClass, node)
-
-    return {
-      key: node.key,
-      label: node.label,
-      icon: node.type === 'folder' ? 'i-lucide-folder' : 'i-lucide-file',
-      class: tokenClass,
-      ...(node.children ? { children: walk(node.children) } : {}),
-    }
-  })
-
-  return { items: walk(items), nodes }
-}
-
 function openContextMenu(event: MouseEvent) {
-  const link = (event.target as HTMLElement).closest('[data-slot="link"]')
-  const tokenClass = link?.className.match(/file-node-\d+/)?.[0]
-  contextNode.value = tokenClass ? tree.value.nodes.get(tokenClass) : undefined
+  contextNode.value = nodeFromEvent(event, tree.value.nodes)
 }
 
-// UTree 会拿一个空对象来探测 key（Reka 内部是 `getKey(modelValue ?? {})`），所以这里不能假设收到的都是真节点。
 function getKey(item: TreeItem): string {
   return String(item.key)
 }

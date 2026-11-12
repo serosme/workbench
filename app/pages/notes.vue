@@ -3,14 +3,13 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 
 const noteForm = useNoteForm()
 const { notes, refresh } = useNotes()
-const { remove } = useDeleteNote(refresh)
+const { remove } = useRemoveNote(refresh)
 const { getMenu } = useNoteMenu(noteForm, remove)
 
-// 按本地日期把笔记分组（服务端已按 createdAt 倒序，组顺序与组内顺序都顺着来，不再排序）
 const groups = computed(() => {
   const map = new Map<string, { date: string, items: Note[] }>()
   for (const note of notes.value) {
-    const date = toDateKey(note.writtenAt)
+    const date = msToDateKey(note.writtenAt)
     let group = map.get(date)
     if (!group) {
       group = { date, items: [] }
@@ -27,11 +26,8 @@ const contextMenuItems = computed<DropdownMenuItem[][]>(() => getMenu(contextNot
 const scrollRef = useTemplateRef<HTMLElement>('scrollRef')
 const scrollMask = useScrollMask(scrollRef)
 
-// 模板只能引用 script 里出现过的标识符：只写在模板里的自动导入工具会被 vue-tsc 当成组件属性
-// （Property 'formatDateKey' does not exist on type 'ComponentPublicInstance'），所以在 script 里收口
 const dayLabel = (date: string) => formatDateKey(date)
 
-// 行带 data-note-id，右键时反查记录；点空白处就是根级菜单（新建）
 function openContextMenu(event: MouseEvent) {
   const row = (event.target as HTMLElement).closest<HTMLElement>('[data-note-id]')
   contextNote.value = notes.value.find(note => note.id === Number(row?.dataset.noteId))
@@ -43,7 +39,6 @@ function openContextMenu(event: MouseEvent) {
     <UContextMenu :items="contextMenuItems" class="block h-full">
       <div ref="scrollRef" class="h-full overflow-y-auto scrollbar-none" :style="scrollMask" @contextmenu="openContextMenu">
         <div class="space-y-6">
-          <!-- ring-inset：描边画进卡片内部，避免被滚动容器（overflow 会把 overflow-x 连带变成 auto）裁掉 -->
           <UCard
             v-for="group in groups"
             :key="group.date"

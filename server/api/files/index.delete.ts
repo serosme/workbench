@@ -1,6 +1,5 @@
-// 文件夹的 key 以 / 结尾：前缀匹配带出整棵子树后一次性删除（driver 的 delete 会忽略不存在的 key）
 export default defineEventHandler(async (event) => {
-  const { path } = await getValidatedQuery(event, query => filePathQuerySchema.parse(query))
+  const { pathname } = await getValidatedQuery(event, query => filePathnameQuerySchema.parse(query))
 
-  await blob.del(path.endsWith('/') ? (await listBlobs(path)).map(item => item.pathname) : path)
+  await blob.del(pathname.endsWith('/') ? (await listBlobs(pathname)).map(item => item.pathname) : pathname)
 })

@@ -1,4 +1,3 @@
-// 字节数 → 人类可读（1.5MB）：客户端展示文件大小、服务端拼 413 文案都用它，所以放在 shared 里
 export function formatBytes(bytes: number): string {
   const units = ['B', 'KB', 'MB', 'GB']
   let value = bytes

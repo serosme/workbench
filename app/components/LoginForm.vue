@@ -16,7 +16,7 @@ const fields: AuthFormField[] = [
 ]
 
 async function onSubmit({ data }: { data: { password: string } }) {
-  await selfFetch('/api/auth/login', {
+  await apiFetch('/api/auth/login', {
     method: 'POST',
     body: { password: data.password },
   })

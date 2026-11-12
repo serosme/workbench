@@ -1,11 +1,11 @@
 export function useFileUploadForm() {
   const modal = reactive({
     open: false,
-    defaultPath: '',
+    defaultPathname: '',
   })
 
-  function open(defaultPath = '') {
-    modal.defaultPath = defaultPath
+  function open(pathname = '') {
+    modal.defaultPathname = pathname
     modal.open = true
   }
 

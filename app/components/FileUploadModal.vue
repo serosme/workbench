@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
-  defaultPath: string
-  upload: (key: string, file: File) => Promise<void>
+  defaultPathname: string
+  upload: (pathname: string, file: File) => Promise<void>
 }>()
 
 const emit = defineEmits<{
@@ -12,19 +12,18 @@ const open = defineModel<boolean>('open', { required: true })
 
 const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
 const file = ref<File>()
-const path = ref('')
+const pathname = ref('')
 const submitting = ref(false)
 const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')
 
 watch(open, (isOpen) => {
   if (isOpen) {
-    path.value = props.defaultPath
+    pathname.value = props.defaultPathname
     file.value = undefined
   }
 })
 
-// 目录就是 key 的前缀：拼在文件名前面的这一段既可以是已存在的文件夹，也可以是新路径
-const prefix = computed(() => path.value.replace(/\\/g, '/').replace(/^\/+|\/+$/g, ''))
+const prefix = computed(() => pathname.value.replace(/\\/g, '/').replace(/^\/+|\/+$/g, ''))
 
 const target = computed(() => `${prefix.value ? `${prefix.value}/` : ''}${file.value?.name ?? ''}`)
 
@@ -71,7 +70,7 @@ async function handleSubmit() {
           <input ref="fileInput" type="file" class="hidden" :disabled="submitting" @change="pickFile">
         </UFormField>
         <UFormField label="Path">
-          <UInput v-model="path" class="w-full" placeholder="Leave empty for root" :disabled="submitting" />
+          <UInput v-model="pathname" class="w-full" placeholder="Leave empty for root" :disabled="submitting" />
         </UFormField>
         <UFormField label="Full Path">
           <UInput :model-value="target" class="w-full" readonly />

@@ -1,5 +1,5 @@
 export function useExpenses() {
-  const { data, refresh } = useSelfFetch('/api/expenses', {
+  const { data, refresh } = useApiFetch('/api/expenses', {
     default: () => [],
   })
 

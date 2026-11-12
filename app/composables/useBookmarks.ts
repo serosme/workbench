@@ -13,14 +13,13 @@ function toTreeItem(b: Bookmark) {
 }
 
 export function useBookmarks() {
-  const { data, refresh } = useSelfFetch('/api/bookmarks')
+  const { data, refresh } = useApiFetch('/api/bookmarks')
 
-  // 单树：文件夹在上（各带子书签），根级书签按 position 落在最下边
   const tree = computed<TreeItem[]>(() => buildTree(sortBookmarks(data.value ?? []).map(toTreeItem)))
 
   return {
+    bookmarks: data,
     tree,
-    data,
     refresh,
   }
 }

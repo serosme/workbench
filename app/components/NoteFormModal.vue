@@ -11,14 +11,12 @@ const emit = defineEmits<{
 
 const open = defineModel<boolean>('open', { required: true })
 
-// item 为空就是新增、有值就是编辑，不需要额外的 mode
 const isEdit = computed(() => !!props.item)
 const modalTitle = computed(() => isEdit.value ? 'Edit Note' : 'New Note')
 
 const formState = reactive({
   title: '',
   content: '',
-  // 书写日期在表单里存 "YYYY-MM-DD" 字符串
   writtenAt: '',
 })
 
@@ -35,8 +33,7 @@ watch(open, (isOpen) => {
   if (isOpen) {
     formState.title = props.item?.title ?? ''
     formState.content = props.item?.content ?? ''
-    // 新增默认今天；编辑回显该笔记的书写日期
-    formState.writtenAt = toDateKey(props.item?.writtenAt ?? Date.now())
+    formState.writtenAt = msToDateKey(props.item?.writtenAt ?? Date.now())
   }
 })
 
@@ -51,10 +48,10 @@ async function handleSubmit() {
       writtenAt: dateKeyToMs(formState.writtenAt),
     }
     if (isEdit.value) {
-      await selfFetch(`/api/notes/${props.item!.id}`, { method: 'PUT', body })
+      await apiFetch(`/api/notes/${props.item!.id}`, { method: 'PUT', body })
     }
     else {
-      await selfFetch('/api/notes', { method: 'POST', body })
+      await apiFetch('/api/notes', { method: 'POST', body })
     }
     emit('saved')
     open.value = false

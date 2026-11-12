@@ -1,14 +1,11 @@
-// up / down 走一格，top / bottom 走到分组首尾：四者的边界条件与重排方式完全一样，只是目标下标不同。
-type MoveDirection = 'up' | 'down' | 'top' | 'bottom'
+export type MoveDirection = 'up' | 'down' | 'top' | 'bottom'
 
-export function useReorderBookmarks(
+export function useBookmarkMove(
   data: Ref<Bookmark[] | null | undefined>,
-  refresh: () => Promise<void>,
+  refresh: () => Promise<unknown>,
 ) {
   const moving = ref(false)
 
-  // id → 所在分组的成员与下标。只在 data 变化时重建一次：
-  // 菜单在渲染期求值，每个节点每次渲染都会调 canMove 两次，不能在里面重排全量数据。
   const located = computed(() => {
     const map = new Map<number, { item: Bookmark, group: Bookmark[], index: number }>()
     const groups = new Map<string, Bookmark[]>()
@@ -37,11 +34,10 @@ export function useReorderBookmarks(
     return atStart ? found.index > 0 : found.index < found.group.length - 1
   }
 
-  // 组内重排统一走 reorder：ids 必须是该 (parentId, type) 分组的完整成员顺序。
-  async function reorder(item: Bookmark, ids: number[]) {
+  async function persistOrder(item: Bookmark, ids: number[]) {
     moving.value = true
     try {
-      await selfFetch('/api/bookmarks/reorder', {
+      await apiFetch('/api/bookmarks/reorder', {
         method: 'PUT',
         body: { parentId: item.parentId, type: item.type, ids },
       })
@@ -53,12 +49,9 @@ export function useReorderBookmarks(
   }
 
   async function move(id: number, direction: MoveDirection) {
-    // canMove 内含 locate：不在分组里、或已在该方向的端点都直接返回；
-    // 否则 up 会算出 target = -1，splice(-1, 0, id) 会把这一项插到倒数第二（静默写坏顺序）。
     if (!canMove(id, direction))
       return
     const { item, group, index } = locate(id)!
-    // 先把自己摘出去，再插到目标下标：首/尾一次到位，不用连着调 N 次「上一格」。
     const target = {
       up: index - 1,
       down: index + 1,
@@ -68,9 +61,8 @@ export function useReorderBookmarks(
     const ids = group.map(b => b.id)
     ids.splice(index, 1)
     ids.splice(target, 0, item.id)
-    await reorder(item, ids)
+    await persistOrder(item, ids)
   }
 
-  // 跨父级移动不在这里：由 MoveFormModal 自己发 PUT /api/bookmarks/move，与其他表单弹窗一致（弹窗发请求 + emit，页面 refresh）。
   return { moving, move, canMove }
 }

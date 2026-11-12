@@ -1,4 +1,4 @@
-export const selfFetch = $fetch.create({
+export const apiFetch = $fetch.create({
   onResponseError({ response }) {
     if (response.status === 401 && !response.url.includes('/api/auth/')) {
       navigateTo(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)

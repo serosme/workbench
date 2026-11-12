@@ -7,13 +7,11 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  created: []
-  updated: []
+  saved: []
 }>()
 
 const open = defineModel<boolean>('open', { required: true })
 
-// item 为空就是新增、有值就是编辑，不需要额外的 mode
 const isEdit = computed(() => !!props.item)
 const title = computed(() => isEdit.value ? 'Edit Bookmark' : 'New Bookmark')
 
@@ -44,9 +42,8 @@ async function handleSubmit() {
   try {
     if (isEdit.value) {
       const body: UpdateBookmarkInput = { name: formState.name, url: formState.url }
-      // 编辑只提交可改字段：type / parentId / position 由服务端保持不变
-      await selfFetch(`/api/bookmarks/${props.item!.id}`, { method: 'PUT', body })
-      emit('updated')
+      await apiFetch(`/api/bookmarks/${props.item!.id}`, { method: 'PUT', body })
+      emit('saved')
     }
     else {
       const body: CreateBookmarkInput = {
@@ -55,8 +52,8 @@ async function handleSubmit() {
         url: formState.url,
         parentId: props.parentId,
       }
-      await selfFetch('/api/bookmarks', { method: 'POST', body })
-      emit('created')
+      await apiFetch('/api/bookmarks', { method: 'POST', body })
+      emit('saved')
     }
     open.value = false
   }

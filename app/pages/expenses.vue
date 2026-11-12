@@ -3,7 +3,7 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 
 const expenseForm = useExpenseForm()
 const { expenses, refresh } = useExpenses()
-const { remove } = useDeleteExpense(refresh)
+const { remove } = useRemoveExpense(refresh)
 const { getMenu } = useExpenseMenu(expenseForm, remove)
 
 const contextExpense = ref<Expense>()
@@ -12,16 +12,14 @@ const contextMenuItems = computed<DropdownMenuItem[][]>(() => getMenu(contextExp
 const scrollRef = useTemplateRef<HTMLElement>('scrollRef')
 const scrollMask = useScrollMask(scrollRef)
 
-// 模板只能引用 script 里出现过的标识符：只写在模板里的自动导入工具会被 vue-tsc 当成组件属性
-// （Property 'formatAmount' does not exist on type 'ComponentPublicInstance'），所以在 script 里收口
-const money = (cents: number) => `¥${formatAmount(cents)}`
+const money = (cents: number) => `¥${formatCents(cents)}`
 const monthLabel = (month: string) => formatMonthKey(month)
 const dayLabel = (date: string) => formatDateKey(date)
 
 const groups = computed(() => {
   const map = new Map<string, { date: string, total: number, items: Expense[] }>()
   for (const expense of expenses.value) {
-    const date = toDateKey(expense.spentAt)
+    const date = msToDateKey(expense.spentAt)
     let group = map.get(date)
     if (!group) {
       group = { date, total: 0, items: [] }
@@ -33,7 +31,6 @@ const groups = computed(() => {
   return [...map.values()]
 })
 
-// 把按天的分组再按「月」聚合，用于每月分段标题
 const months = computed(() => {
   const map = new Map<string, { month: string, total: number, groups: typeof groups.value }>()
   for (const group of groups.value) {
@@ -61,7 +58,6 @@ function openContextMenu(event: MouseEvent) {
       <div ref="scrollRef" class="h-full overflow-y-auto scrollbar-none" :style="scrollMask" @contextmenu="openContextMenu">
         <div class="space-y-6">
           <section v-for="entry in months" :key="entry.month" class="space-y-6">
-            <!-- 月份卡片：显示该月合计 -->
             <UCard :ui="{ root: 'ring-inset' }">
               <div class="flex items-end justify-between">
                 <span class="text-sm font-medium text-muted">{{ monthLabel(entry.month) }}</span>

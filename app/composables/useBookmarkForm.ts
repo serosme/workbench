@@ -1,4 +1,3 @@
-// 书签树节点的弹窗状态：书签和文件夹的弹窗形状一样（parentId + item），页面按用途各实例化一份。
 export function useBookmarkForm() {
   const modal = reactive<{
     open: boolean

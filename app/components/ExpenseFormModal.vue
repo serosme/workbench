@@ -11,14 +11,12 @@ const emit = defineEmits<{
 
 const open = defineModel<boolean>('open', { required: true })
 
-// item 为空就是新增、有值就是编辑，不需要额外的 mode
 const isEdit = computed(() => !!props.item)
 const modalTitle = computed(() => isEdit.value ? 'Edit Expense' : 'New Expense')
 
 const formState = reactive({
   amount: null as number | null,
   item: '',
-  // 日期在表单里存 "YYYY-MM-DD" 字符串
   spentAt: '',
 })
 
@@ -35,7 +33,7 @@ watch(open, (isOpen) => {
   if (isOpen) {
     formState.item = props.item?.item ?? ''
     formState.amount = props.item ? props.item.amount / 100 : null
-    formState.spentAt = toDateKey(props.item?.spentAt ?? Date.now())
+    formState.spentAt = msToDateKey(props.item?.spentAt ?? Date.now())
   }
 })
 
@@ -50,10 +48,10 @@ async function handleSubmit() {
       spentAt: dateKeyToMs(formState.spentAt),
     }
     if (isEdit.value) {
-      await selfFetch(`/api/expenses/${props.item!.id}`, { method: 'PUT', body })
+      await apiFetch(`/api/expenses/${props.item!.id}`, { method: 'PUT', body })
     }
     else {
-      await selfFetch('/api/expenses', { method: 'POST', body })
+      await apiFetch('/api/expenses', { method: 'POST', body })
     }
     emit('saved')
     open.value = false
