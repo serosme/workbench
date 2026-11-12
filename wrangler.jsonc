@@ -1,18 +1,18 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "workbench",
+  "name": "attic-worker",
   "workers_dev": false,
   "preview_urls": false,
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "workbench-db"
+      "database_name": "attic-d1"
     }
   ],
   "r2_buckets": [
     {
       "binding": "BLOB",
-      "bucket_name": "workbench-r2"
+      "bucket_name": "attic-r2"
     }
   ],
   "observability": {
