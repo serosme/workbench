@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "nuxt-ui": {
+      "url": "https://ui.nuxt.com/mcp",
+      "description": "Nuxt UI v4 docs for this repo: search components, icons and doc pages; read component usage/examples/API sections, props/slots/events metadata, and full example sources.",
+      "exposure": "deferred"
+    }
+  }
+}
