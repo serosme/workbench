@@ -6,13 +6,15 @@ export function useNoteMenu(
 ) {
   function getMenu(note?: Note): DropdownMenuItem[][] {
     if (!note) {
-      return [[
-        {
-          label: 'New Note',
-          icon: 'i-lucide-plus',
-          onSelect() { noteForm.openCreate() },
-        },
-      ]]
+      return [
+        [
+          {
+            label: 'New Note',
+            icon: 'i-lucide-plus',
+            onSelect() { noteForm.openCreate() },
+          },
+        ],
+      ]
     }
 
     return [

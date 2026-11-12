@@ -4,15 +4,25 @@ import { parseDate } from '@internationalized/date'
 
 const model = defineModel<string>({ required: true })
 
-const value = computed(() => (model.value ? parseDate(model.value) : undefined))
+const value = computed(() => (model.value
+  ? parseDate(model.value)
+  : undefined))
 
 const input = computed<DateValue | null>({
   get: () => value.value ?? null,
-  set: (v) => { model.value = v ? v.toString() : '' },
+  set: (v) => {
+    model.value = v
+      ? v.toString()
+      : ''
+  },
 })
 const calendar = computed<DateValue | undefined>({
   get: () => value.value,
-  set: (v) => { model.value = v ? v.toString() : '' },
+  set: (v) => {
+    model.value = v
+      ? v.toString()
+      : ''
+  },
 })
 
 const dateField = useTemplateRef<HTMLElement>('dateField')

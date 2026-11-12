@@ -4,8 +4,11 @@ export function sortBookmarks<T extends { parentId: number | null, type: string,
     const pb = b.parentId ?? -1
     if (pa !== pb)
       return pa - pb
-    if (a.type !== b.type)
-      return a.type === 'folder' ? -1 : 1
+    if (a.type !== b.type) {
+      return a.type === 'folder'
+        ? -1
+        : 1
+    }
     return a.position - b.position
   })
 }
@@ -40,13 +43,19 @@ export interface BookmarkFolderNode {
 export function buildBookmarkFolderTree<
   T extends { id: number, parentId: number | null, type: string, name: string, position: number },
 >(list: T[], moving?: { id: number, type: string }): BookmarkFolderNode[] {
-  const excludedId = moving?.type === 'folder' ? moving.id : undefined
+  const excludedId = moving?.type === 'folder'
+    ? moving.id
+    : undefined
   const folders = sortBookmarks(list.filter(b => b.type === 'folder' && b.id !== excludedId))
 
   function childrenOf(parentId: number | null): BookmarkFolderNode[] {
     return folders
       .filter(b => b.parentId === parentId)
-      .map(b => ({ id: b.id, name: b.name, children: childrenOf(b.id) }))
+      .map(b => ({
+        id: b.id,
+        name: b.name,
+        children: childrenOf(b.id),
+      }))
   }
 
   return childrenOf(null)

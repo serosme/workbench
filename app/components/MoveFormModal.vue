@@ -12,7 +12,9 @@ const emit = defineEmits<{
 
 const open = defineModel<boolean>('open', { required: true })
 
-const title = computed(() => props.item?.type === 'folder' ? 'Move Folder' : 'Move Bookmark')
+const title = computed(() => props.item?.type === 'folder'
+  ? 'Move Folder'
+  : 'Move Bookmark')
 
 const formState = reactive<{ target: number | null }>({
   target: null,
@@ -36,17 +38,31 @@ function toItems(nodes: BookmarkFolderNode[]): MoveTarget[] {
     icon: 'i-lucide-folder',
     value: node.id,
     onSelect: () => { formState.target = node.id },
-    ...(node.children.length ? { children: toItems(node.children) } : {}),
+    ...(node.children.length
+      ? {
+          children: toItems(node.children),
+        }
+      : {}),
   }))
 }
 
 const items = computed<MoveTarget[]>(() => [
-  { label: 'Root', icon: 'i-lucide-folder', value: null, onSelect: () => { formState.target = null } },
+  {
+    label: 'Root',
+    icon: 'i-lucide-folder',
+    value: null,
+    onSelect: () => { formState.target = null },
+  },
   ...toItems(props.targets),
 ])
 
 function collectExpanded(nodes: MoveTarget[]): string[] {
-  return nodes.flatMap(node => (node.children?.length ? [String(node.value), ...collectExpanded(node.children)] : []))
+  return nodes.flatMap(node => (node.children?.length
+    ? [
+        String(node.value),
+        ...collectExpanded(node.children),
+      ]
+    : []))
 }
 const expandedKeys = computed(() => collectExpanded(items.value))
 

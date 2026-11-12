@@ -32,7 +32,9 @@ const formRef = useTemplateRef<{ submit: () => Promise<void> }>('formRef')
 watch(open, (isOpen) => {
   if (isOpen) {
     formState.item = props.item?.item ?? ''
-    formState.amount = props.item ? props.item.amount / 100 : null
+    formState.amount = props.item
+      ? props.item.amount / 100
+      : null
     formState.spentAt = msToDateKey(props.item?.spentAt ?? Date.now())
   }
 })

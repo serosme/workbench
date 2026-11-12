@@ -8,8 +8,19 @@ const { tree, bookmarks, refresh } = useBookmarks()
 const { remove: removeBookmark } = useRemoveBookmark(refresh)
 const { remove: removeFolder } = useRemoveBookmarkFolder(refresh)
 const bookmarkMove = useBookmarkMove(bookmarks, refresh)
-const { getMenu: getBookmarkMenu } = useBookmarkMenu({ bookmarkForm, moveForm, bookmarkMove, remove: removeBookmark })
-const { getMenu: getFolderMenu } = useBookmarkFolderMenu({ bookmarkForm, folderForm, moveForm, bookmarkMove, remove: removeFolder })
+const { getMenu: getBookmarkMenu } = useBookmarkMenu({
+  bookmarkForm,
+  moveForm,
+  bookmarkMove,
+  remove: removeBookmark,
+})
+const { getMenu: getFolderMenu } = useBookmarkFolderMenu({
+  bookmarkForm,
+  folderForm,
+  moveForm,
+  bookmarkMove,
+  remove: removeFolder,
+})
 
 const { tree: fileTree, ready: filesReady, upload: uploadFile, refresh: refreshFiles } = useFiles()
 const fileUploadForm = useFileUploadForm()
@@ -23,12 +34,24 @@ const contextBookmark = ref<Bookmark>()
 const contextMenuItems = computed<DropdownMenuItem[][]>(() => {
   const b = contextBookmark.value
   if (!b) {
-    return [[
-      { label: 'New Folder', icon: 'i-lucide-folder-plus', onSelect: () => folderForm.openCreate() },
-      { label: 'New Bookmark', icon: 'i-lucide-bookmark-plus', onSelect: () => bookmarkForm.openCreate() },
-    ]]
+    return [
+      [
+        {
+          label: 'New Folder',
+          icon: 'i-lucide-folder-plus',
+          onSelect: () => folderForm.openCreate(),
+        },
+        {
+          label: 'New Bookmark',
+          icon: 'i-lucide-bookmark-plus',
+          onSelect: () => bookmarkForm.openCreate(),
+        },
+      ],
+    ]
   }
-  return b.type === 'folder' ? getFolderMenu(b) : getBookmarkMenu(b)
+  return b.type === 'folder'
+    ? getFolderMenu(b)
+    : getBookmarkMenu(b)
 })
 
 const scrollRef = useTemplateRef<HTMLElement>('scrollRef')
@@ -41,7 +64,9 @@ const contextTree = computed(() => withNodeTokens(tree.value, (item, tokenClass)
 
 function openContextMenu(event: MouseEvent) {
   const item = nodeFromEvent(event, contextTree.value.nodes)
-  contextBookmark.value = item ? bookmarks.value?.find(b => b.id === item.id) : undefined
+  contextBookmark.value = item
+    ? bookmarks.value?.find(b => b.id === item.id)
+    : undefined
 }
 
 function getKey(item: TreeItem): string {

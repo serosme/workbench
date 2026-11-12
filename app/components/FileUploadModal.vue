@@ -25,7 +25,9 @@ watch(open, (isOpen) => {
 
 const prefix = computed(() => pathname.value.replace(/\\/g, '/').replace(/^\/+|\/+$/g, ''))
 
-const target = computed(() => `${prefix.value ? `${prefix.value}/` : ''}${file.value?.name ?? ''}`)
+const target = computed(() => `${prefix.value
+  ? `${prefix.value}/`
+  : ''}${file.value?.name ?? ''}`)
 
 function pickFile(event: Event) {
   const input = event.target as HTMLInputElement

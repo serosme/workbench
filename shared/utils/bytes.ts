@@ -6,5 +6,7 @@ export function formatBytes(bytes: number): string {
     value /= 1024
     unit++
   }
-  return `${value.toFixed(unit === 0 ? 0 : 1).replace(/\.0$/, '')}${units[unit]}`
+  return `${value.toFixed(unit === 0
+    ? 0
+    : 1).replace(/\.0$/, '')}${units[unit]}`
 }

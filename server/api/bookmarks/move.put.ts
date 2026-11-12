@@ -36,6 +36,9 @@ export default defineEventHandler<{ body: MoveBookmarkInput }, void>(async (even
   await db.batch([
     renumberGroupQuery(moving.parentId, moving.type, groupIds(moving.parentId)),
     db.update(schema.bookmarks).set({ parentId }).where(eq(schema.bookmarks.id, id)),
-    renumberGroupQuery(parentId, moving.type, [...groupIds(parentId), id]),
+    renumberGroupQuery(parentId, moving.type, [
+      ...groupIds(parentId),
+      id,
+    ]),
   ])
 })

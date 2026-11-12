@@ -70,13 +70,15 @@ export function useFileMenu({ uploadForm, preview, remove }: {
       ]
     }
 
-    return [[
-      {
-        label: 'Upload File',
-        icon: 'i-lucide-upload',
-        onSelect() { uploadForm.open() },
-      },
-    ]]
+    return [
+      [
+        {
+          label: 'Upload File',
+          icon: 'i-lucide-upload',
+          onSelect() { uploadForm.open() },
+        },
+      ],
+    ]
   }
 
   return { getMenu }

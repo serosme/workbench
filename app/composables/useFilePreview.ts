@@ -6,7 +6,9 @@ export function useFilePreview() {
   })
 
   async function open(node: FileTreeNode) {
-    const { content } = await apiFetch('/api/files/preview', { query: { pathname: node.pathname } })
+    const { content } = await apiFetch('/api/files/preview', {
+      query: { pathname: node.pathname },
+    })
     modal.pathname = node.pathname
     modal.content = content
     modal.open = true

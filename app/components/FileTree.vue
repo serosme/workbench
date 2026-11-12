@@ -10,7 +10,9 @@ const contextNode = ref<FileTreeNode>()
 const tree = computed(() => withNodeTokens(props.items, (node, tokenClass) => ({
   key: node.pathname,
   label: node.label,
-  icon: node.type === 'folder' ? 'i-lucide-folder' : 'i-lucide-file',
+  icon: node.type === 'folder'
+    ? 'i-lucide-folder'
+    : 'i-lucide-file',
   class: tokenClass,
 })))
 const contextItems = computed(() => props.getMenu(contextNode.value))

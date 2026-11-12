@@ -3,7 +3,9 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 export function groupWhere(type: 'folder' | 'bookmark', parentId: number | null | undefined) {
   return and(
     eq(schema.bookmarks.type, type),
-    parentId == null ? isNull(schema.bookmarks.parentId) : eq(schema.bookmarks.parentId, parentId),
+    parentId == null
+      ? isNull(schema.bookmarks.parentId)
+      : eq(schema.bookmarks.parentId, parentId),
   )
 }
 

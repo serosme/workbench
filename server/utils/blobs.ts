@@ -5,7 +5,9 @@ export async function listBlobs(prefix: string): Promise<BlobObject[]> {
   let cursor: string | undefined
 
   do {
-    const page = await blob.list(cursor ? { cursor } : undefined)
+    const page = await blob.list(cursor
+      ? { cursor }
+      : undefined)
     objects.push(...page.blobs)
     cursor = page.hasMore ? page.cursor : undefined
   } while (cursor)

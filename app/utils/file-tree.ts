@@ -24,8 +24,19 @@ export function buildFileTree(objects: { pathname: string, size?: number, conten
       let node = children.find(item => item.pathname === nodePathname)
       if (!node) {
         node = isFile
-          ? { label: part, pathname: nodePathname, type: 'file', size, contentType }
-          : { label: part, pathname: nodePathname, type: 'folder', children: [] }
+          ? {
+              label: part,
+              pathname: nodePathname,
+              type: 'file',
+              size,
+              contentType,
+            }
+          : {
+              label: part,
+              pathname: nodePathname,
+              type: 'folder',
+              children: [],
+            }
         children.push(node)
       }
       if (!isFile)
@@ -34,7 +45,11 @@ export function buildFileTree(objects: { pathname: string, size?: number, conten
   }
 
   function sort(nodes: FileTreeNode[]) {
-    nodes.sort((a, b) => a.type === b.type ? a.label.localeCompare(b.label) : a.type === 'folder' ? -1 : 1)
+    nodes.sort((a, b) => a.type === b.type
+      ? a.label.localeCompare(b.label)
+      : a.type === 'folder'
+        ? -1
+        : 1)
     for (const node of nodes) {
       if (node.children)
         sort(node.children)

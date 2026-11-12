@@ -6,13 +6,15 @@ export function useExpenseMenu(
 ) {
   function getMenu(expense?: Expense): DropdownMenuItem[][] {
     if (!expense) {
-      return [[
-        {
-          label: 'New Expense',
-          icon: 'i-lucide-plus',
-          onSelect() { expenseForm.openCreate() },
-        },
-      ]]
+      return [
+        [
+          {
+            label: 'New Expense',
+            icon: 'i-lucide-plus',
+            onSelect() { expenseForm.openCreate() },
+          },
+        ],
+      ]
     }
 
     return [

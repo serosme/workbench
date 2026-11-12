@@ -17,7 +17,9 @@ const groups = computed(() => {
     }
     group.items.push(note)
   }
-  return [...map.values()]
+  return [
+    ...map.values(),
+  ]
 })
 
 const contextNote = ref<Note>()

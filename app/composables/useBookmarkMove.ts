@@ -31,7 +31,9 @@ export function useBookmarkMove(
     if (!found)
       return false
     const atStart = direction === 'up' || direction === 'top'
-    return atStart ? found.index > 0 : found.index < found.group.length - 1
+    return atStart
+      ? found.index > 0
+      : found.index < found.group.length - 1
   }
 
   async function persistOrder(item: Bookmark, ids: number[]) {

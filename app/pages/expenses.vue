@@ -28,7 +28,9 @@ const groups = computed(() => {
     group.items.push(expense)
     group.total += expense.amount
   }
-  return [...map.values()]
+  return [
+    ...map.values(),
+  ]
 })
 
 const months = computed(() => {
@@ -43,7 +45,9 @@ const months = computed(() => {
     entry.total += group.total
     entry.groups.push(group)
   }
-  return [...map.values()]
+  return [
+    ...map.values(),
+  ]
 })
 
 function openContextMenu(event: MouseEvent) {

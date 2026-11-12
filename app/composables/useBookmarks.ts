@@ -5,9 +5,13 @@ function toTreeItem(b: Bookmark) {
     id: b.id,
     parentId: b.parentId,
     label: b.name,
-    icon: b.type === 'folder' ? 'i-lucide-folder' : 'i-lucide-bookmark',
+    icon: b.type === 'folder'
+      ? 'i-lucide-folder'
+      : 'i-lucide-bookmark',
     onSelect: b.type === 'bookmark' && b.url
-      ? () => navigateTo(b.url!, { open: { target: '_blank' } })
+      ? () => navigateTo(b.url!, {
+          open: { target: '_blank' },
+        })
       : undefined,
   }
 }

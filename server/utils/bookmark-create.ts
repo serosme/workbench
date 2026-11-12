@@ -17,7 +17,13 @@ export async function createBookmark(input: CreateBookmarkInput) {
     .get()
 
   const [created] = await db.insert(schema.bookmarks)
-    .values({ type, name, url, parentId, position: (row?.max ?? 0) + 1 })
+    .values({
+      type,
+      name,
+      url,
+      parentId,
+      position: (row?.max ?? 0) + 1,
+    })
     .returning()
   return created
 }

@@ -18,5 +18,7 @@ export default defineEventHandler(async (event) => {
   if (bytes.subarray(0, 8192).includes(0))
     throw createError({ status: 415, message: 'Not a text file' })
 
-  return { content: decodeText(bytes) }
+  return {
+    content: decodeText(bytes),
+  }
 })
