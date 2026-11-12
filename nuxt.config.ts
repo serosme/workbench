@@ -19,9 +19,6 @@ export default defineNuxtConfig({
     db: 'sqlite',
     blob: true,
   },
-  routeRules: {
-    '/': { redirect: '/bookmarks' },
-  },
   app: {
     head: {
       title: 'Workbench',

@@ -1,6 +1,6 @@
 # Workbench Agent Instructions
 
-个人自用的 Nuxt 4 应用：单用户密码登录；书签页 = 左侧书签树 + 右侧文件树，笔记页 = 按书写日期分组的卡片，记账页 = 按月/按天分组的流水；节点与空白处都用右键菜单。技术栈：Nuxt 4、Nuxt UI v4、Nuxt Hub（DB + Blob）、Drizzle + SQLite/D1、Tailwind v4、TypeScript 6。
+个人自用的 Nuxt 4 应用：单用户密码登录；主页 = 左侧书签树 + 右侧文件树，笔记页 = 按书写日期分组的卡片，记账页 = 按月/按天分组的流水；节点与空白处都用右键菜单。技术栈：Nuxt 4、Nuxt UI v4、Nuxt Hub（DB + Blob）、Drizzle + SQLite/D1、Tailwind v4、TypeScript 6。
 
 > 本文件只写三类东西：**必须遵守的约束**、**决策点与理由**（为什么用这个、为什么不用那个）、**命令与环境事实**。页面结构、组件用法、API 行为、表结构、目录清单都能读代码得到，不在这里复述，改动代码时按需读源码。
 >
@@ -23,9 +23,9 @@
 
 ### 渲染与取数
 
-- **书签页两栏等两边请求都落地才一起渲染**（`v-if="data && filesReady"`，不用 `status`）：否则两栏会先后出现、不同步。`data` 还在时刷新不整页闪；`filesReady` 由 `useFiles` 给（`data !== undefined || error !== undefined`），**不用 `status !== 'pending'`**——上传成功后的 refresh 会把 status 短暂置回 pending，那会把整页收起来；**也不能只看 `data`**，否则文件接口挂掉（R2 绑定缺失等）时整页永远空白。两个请求在 setup 里并发发出，等待时间是两者的较大者。左栏 `md:w-1/2` 放书签树，右栏 `hidden md:flex md:flex-1` 放文件树（两栏 1:1、中间不画分割线，靠两栏各自的 `pr-6` / `pl-6` 留白区分），所以移动端只有书签树。
+- **主页两栏等两边请求都落地才一起渲染**（`v-if="data && filesReady"`，不用 `status`）：否则两栏会先后出现、不同步。`data` 还在时刷新不整页闪；`filesReady` 由 `useFiles` 给（`data !== undefined || error !== undefined`），**不用 `status !== 'pending'`**——上传成功后的 refresh 会把 status 短暂置回 pending，那会把整页收起来；**也不能只看 `data`**，否则文件接口挂掉（R2 绑定缺失等）时整页永远空白。两个请求在 setup 里并发发出，等待时间是两者的较大者。左栏 `md:w-1/2` 放书签树，右栏 `hidden md:flex md:flex-1` 放文件树（两栏 1:1、中间不画分割线，靠两栏各自的 `pr-6` / `pl-6` 留白区分），所以移动端只有书签树。
 - **`selfFetch` / `useSelfFetch` 而不是裸 `$fetch`**：401 跳登录与错误 toast 只有一处实现，业务代码拿到的语义统一（还有 `useSelfFetch` 为什么必须用对象形式，见「类型与跨端契约」）。
-- **`/` 的两套跳转**：`routeRules` 的 307 只处理服务端硬加载；SPA 内部 `navigateTo('/')` 走 `pages/index.vue` 再 replace 到 `/bookmarks`；登录成功的默认跳转直接去 `/bookmarks`，少一跳。
+- **主页就是书签树 + 文件树（`pages/index.vue` 即 `/`），不再有 `/bookmarks`**：`PageNav` 的 `Bookmarks` 指向 `/`，登录后默认也回 `/`；没有 `routeRules` 的 307、没有中转页，少一跳。页面还是那两栏，只是名字不再是「书签页」——它同时装文件树，加新的顶层内容也放这一页，`PageNav` 只负责切到笔记 / 记账。
 - **fail loudly，不写 `try/catch` 包请求**：`selfFetch` 已全局弹错误 toast，异常自然传播（unhandled rejection 即预期表现），成功路径（emit / refresh / toast）就不会执行；`try/finally` 允许，因为它不吞异常、只用于复位 `moving` / `submitting` 这类状态。唯一例外是 `selfFetch` 的 `onRequestError` 里 `name === 'AbortError'` 直接 return：`useSelfFetch` 在组件卸载 / 去重 / `enabled: false` 时都会中止在途请求，ofetch 把这次中止也交给 `onRequestError`，不拦就会在切页时弹「AsyncData request cancelled by unmount」这类无意义 toast（`useAsyncData` 自己会吞掉 AbortError 并把状态置回 idle，所以拦掉不会丢真实错误）。
 - **外链书签用 `navigateTo(url, { open: { target: '_blank' } })`，不用 `{ external: true }`**：`external` 的客户端实现是先 `nuxtApp._scope.stop()` 再 `location.href = url`——停 scope 会连带销毁 Nuxt UI colors 插件注入的 `<style id="nuxt-ui-colors">`，于是点书签瞬间整页丢失 primary 配色（绿色变透明/黑、布局不变，见「命令」一节 unhead 那条），而且应用停在屏幕上时响应式已全停；`open` 在函数最前面就走 `window.open()` 并立刻返回，当前标签既不换文档也不停 scope。代价是书签一律新标签打开，这是选定的行为；因此书签右键菜单**不再保留 `Open in New Tab`**（左键就是新标签，留一个同义项纯属重复）。
 
@@ -43,7 +43,7 @@
 - **四个同级移动共用一个 `move(id, direction)`**（`up | down | top | bottom`），差别只是目标下标：不单独加 `moveToEdge`，也不用循环调 `move` 实现首尾（一次整组重编号即可）。`move` 开头先 `canMove`：已在两端时 `splice(-1, 0, id)` 会插到倒数第二位、静默写坏顺序。
 - **移动的两条通道**：同父级走 `PUT /api/bookmarks/reorder`；跨父级走 `PUT /api/bookmarks/move`（`db.batch()` 里「源组重编号 → 更新 parentId → 目标组重编号」原子完成，目标组写最后，所以同父级移动也正确）。`reorder` / `move` 是静态路由，优先于 `[id]`。
 - **跨父级候选树用 `buildFolderTree(data, item)`**：util 只剪掉「它自己」，子孙天然进不来；不剪会成环，而成环的行在 `buildTree` 里都成不了 root，整棵子树从界面消失且再也点不到。服务端 `move.put.ts` 再拒一次（自身、不存在、移进自己的子孙）。
-- **`createBookmark` 与 `move` 都校验 `parentId` 必须是 `null` 或已存在的文件夹**：孤儿行会让 `buildTree` 抛错、书签页白屏；`buildTree` 对未知父级降级为 root 作为第二道防线，别把这条兜底删掉。
+- **`createBookmark` 与 `move` 都校验 `parentId` 必须是 `null` 或已存在的文件夹**：孤儿行会让 `buildTree` 抛错、主页白屏；`buildTree` 对未知父级降级为 root 作为第二道防线，别把这条兜底删掉。
 
 ### 数据存储
 
@@ -69,7 +69,7 @@
 - **上传弹窗只收「路径前缀 + 文件」，key = `prefix/文件名`**：新增的层级不需要预先存在，上传后自然出现在树里——这就是「新建文件夹」的替代（不做单独的建目录接口）。在文件夹上上传时前缀默认是该文件夹的 key，用户可以继续追加。上传期间路径输入与选择按钮都 `:disabled="submitting"`，避免中途改 key。
 - **`upload` 由页面注入弹窗（`:upload` prop），不要在弹窗里再调 `useFiles()`**：两个组件各调一次会在同一 key 上重复发起 `useSelfFetch('/api/files')`，Nuxt 去重会取消其中一个并抛 `AbortError: AsyncData request cancelled by deduplication`。
 - **文件树右键靠 token class 定位节点**（与书签树同一套手法）：`UTree` 只透传 `item.class` 到带 `data-slot="link"` 的元素，所以 `FileTree.vue` 组树时给每个节点挂 `file-node-<n>` 并建 token → node 的 Map，`@contextmenu` 里 `closest('[data-slot="link"]')` 读类名反查；拿不到类名就当成空白处（弹根级上传菜单）。文件图标不区分扩展名，统一 `i-lucide-file` / `i-lucide-folder`。
-- **文件树是书签页右栏的一个组件，不是独立页面**：它自己管自己的滚动容器与 `useScrollMask`，外观与书签树一致（两处共用 `app/utils/tree-ui.ts` 的 `treeNavUi`），所以两栏看起来是一套树；`PageNav` 只有书签 / 笔记 / 记账三项。
+- **文件树是主页右栏的一个组件，不是独立页面**：它自己管自己的滚动容器与 `useScrollMask`，外观与书签树一致（两处共用 `app/utils/tree-ui.ts` 的 `treeNavUi`），所以两栏看起来是一套树；`PageNav` 只有书签 / 笔记 / 记账三项。
 
 ### 类型与跨端契约
 

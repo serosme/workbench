@@ -2,7 +2,7 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 
 const items: NavigationMenuItem[] = [
-  { label: 'Bookmarks', icon: 'i-lucide-bookmark', to: '/bookmarks' },
+  { label: 'Bookmarks', icon: 'i-lucide-bookmark', to: '/' },
   { label: 'Notes', icon: 'i-lucide-notebook-pen', to: '/notes' },
   { label: 'Expenses', icon: 'i-lucide-wallet', to: '/expenses' },
 ]
